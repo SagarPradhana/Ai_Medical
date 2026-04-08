@@ -1,0 +1,31 @@
+﻿{
+  "doctors": [],
+  "patients": [],
+  "appointments": [],
+  "liveSessions": [],
+  "medicalRecords": [],
+  "users": [],
+  "roles": [
+    { "id": "role-admin", "name": "admin", "description": "Platform administrator", "isSystem": true },
+    { "id": "role-doctor", "name": "doctor", "description": "Clinical provider", "isSystem": true },
+    { "id": "role-patient", "name": "patient", "description": "Patient account", "isSystem": true }
+  ],
+  "permissionEntries": [
+    { "id": "perm-1", "role": "admin", "resource": "doctor", "actions": ["create", "read", "update", "delete"] },
+    { "id": "perm-2", "role": "admin", "resource": "patient", "actions": ["create", "read", "update", "delete"] },
+    { "id": "perm-3", "role": "admin", "resource": "appointment", "actions": ["create", "read", "update", "delete"] },
+    { "id": "perm-4", "role": "admin", "resource": "rbac", "actions": ["create", "read", "update", "delete"] },
+    { "id": "perm-5", "role": "doctor", "resource": "doctor", "actions": ["read", "update"] },
+    { "id": "perm-6", "role": "doctor", "resource": "patient", "actions": ["create", "read", "update", "delete"] },
+    { "id": "perm-7", "role": "doctor", "resource": "appointment", "actions": ["create", "read", "update", "delete"] },
+    { "id": "perm-8", "role": "patient", "resource": "doctor", "actions": ["read"] },
+    { "id": "perm-9", "role": "patient", "resource": "patient", "actions": ["read", "update"] },
+    { "id": "perm-10", "role": "patient", "resource": "appointment", "actions": ["create", "read", "update", "delete"] },
+    { "id": "perm-11", "role": "admin", "resource": "session", "actions": ["create", "read", "update", "delete"] },
+    { "id": "perm-12", "role": "doctor", "resource": "session", "actions": ["create", "read", "update"] },
+    { "id": "perm-13", "role": "patient", "resource": "session", "actions": ["create", "read", "update"] },
+    { "id": "perm-14", "role": "admin", "resource": "record", "actions": ["create", "read", "update", "delete"] },
+    { "id": "perm-15", "role": "doctor", "resource": "record", "actions": ["create", "read", "update", "delete"] },
+    { "id": "perm-16", "role": "patient", "resource": "record", "actions": ["read"] }
+  ]
+}
