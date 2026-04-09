@@ -3,10 +3,12 @@ import bcrypt from "bcryptjs";
 import cors from "cors";
 import express from "express";
 import { access, readFile, writeFile } from "node:fs/promises";
+import { createServer } from "node:http";
 import jwt from "jsonwebtoken";
 import { MongoClient } from "mongodb";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { WebSocketServer } from "ws";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -20,6 +22,7 @@ const USE_MONGODB = Boolean(MONGODB_URI);
 
 let mongoClient = null;
 let mongoDb = null;
+const liveSessionSockets = new Map();
 
 const allowedOrigins = CORS_ORIGIN.split(",")
   .map((origin) => origin.trim())
@@ -1460,6 +1463,41 @@ function canAccessSession(auth, session) {
   return false;
 }
 
+function getSessionRoom(sessionId) {
+  if (!liveSessionSockets.has(sessionId)) {
+    liveSessionSockets.set(sessionId, new Set());
+  }
+  return liveSessionSockets.get(sessionId);
+}
+
+function sendWs(ws, payload) {
+  if (!ws || ws.readyState !== 1) return;
+  ws.send(JSON.stringify(payload));
+}
+
+function broadcastToSession(sessionId, payload, excludeWs = null) {
+  const room = liveSessionSockets.get(sessionId);
+  if (!room) return;
+  room.forEach((client) => {
+    if (client !== excludeWs && client.readyState === 1) {
+      client.send(JSON.stringify(payload));
+    }
+  });
+}
+
+function cleanupSocketRooms(ws) {
+  if (!ws?.sessionIds) return;
+  ws.sessionIds.forEach((sessionId) => {
+    const room = liveSessionSockets.get(sessionId);
+    if (!room) return;
+    room.delete(ws);
+    if (room.size === 0) {
+      liveSessionSockets.delete(sessionId);
+    }
+  });
+  ws.sessionIds.clear();
+}
+
 app.get("/api/live-sessions", authenticateToken, requirePermission("session", "read"), (req, res) => {
   if (req.auth.role === "admin") {
     return res.json({ data: liveSessions });
@@ -1510,6 +1548,7 @@ app.post("/api/live-sessions", authenticateToken, requirePermission("session", "
   };
   liveSessions.push(next);
   persistDb();
+  broadcastToSession(next.id, { type: "session.created", session: next });
   return res.status(201).json({ data: next });
 });
 
@@ -1531,6 +1570,7 @@ app.put("/api/live-sessions/:id", authenticateToken, requirePermission("session"
     endedAt: nextStatus === "Ended" ? new Date().toISOString() : liveSessions[idx].endedAt
   };
   persistDb();
+  broadcastToSession(liveSessions[idx].id, { type: "session.updated", session: liveSessions[idx] });
   return res.json({ data: liveSessions[idx] });
 });
 
@@ -1557,6 +1597,11 @@ app.post("/api/live-sessions/:id/messages", authenticateToken, requirePermission
     timestamp: new Date().toISOString()
   });
   persistDb();
+  broadcastToSession(session.id, {
+    type: "chat",
+    sessionId: session.id,
+    message: session.messages[session.messages.length - 1]
+  });
   return res.status(201).json({ data: session });
 });
 
@@ -1583,13 +1628,148 @@ app.post("/api/chat", authenticateToken, (req, res) => {
 
 await initializeDb();
 
-const server = app.listen(PORT, () => {
+const httpServer = createServer(app);
+const wsServer = new WebSocketServer({ server: httpServer, path: "/ws" });
+
+wsServer.on("connection", (ws, req) => {
+  const requestUrl = new URL(req.url || "/ws", `http://${req.headers.host}`);
+  const token = requestUrl.searchParams.get("token") || "";
+
+  let auth = null;
+  try {
+    auth = jwt.verify(token, JWT_SECRET);
+  } catch (_error) {
+    ws.close(1008, "Unauthorized");
+    return;
+  }
+
+  ws.auth = auth;
+  ws.sessionIds = new Set();
+
+  sendWs(ws, { type: "connected", user: { id: auth.sub, role: auth.role, name: auth.name } });
+
+  ws.on("message", (raw) => {
+    let payload = null;
+    try {
+      payload = JSON.parse(String(raw));
+    } catch (_error) {
+      sendWs(ws, { type: "error", message: "Invalid JSON message" });
+      return;
+    }
+
+    const sessionId = String(payload?.sessionId || "");
+    const session = liveSessions.find((item) => item.id === sessionId);
+    if (!sessionId || !session) {
+      sendWs(ws, { type: "error", message: "Invalid sessionId" });
+      return;
+    }
+    if (!canAccessSession(ws.auth, session)) {
+      sendWs(ws, { type: "error", message: "Not allowed for this session" });
+      return;
+    }
+
+    if (payload.type === "join") {
+      if (!hasPermission(ws.auth.role, "session", "read")) {
+        sendWs(ws, { type: "error", message: "Permission denied for session:read" });
+        return;
+      }
+      const room = getSessionRoom(sessionId);
+      room.add(ws);
+      ws.sessionIds.add(sessionId);
+      sendWs(ws, { type: "joined", sessionId, participants: room.size });
+      broadcastToSession(
+        sessionId,
+        { type: "presence", sessionId, participants: room.size, user: { id: ws.auth.sub, name: ws.auth.name } },
+        ws
+      );
+      return;
+    }
+
+    if (payload.type === "chat") {
+      if (!hasPermission(ws.auth.role, "session", "update")) {
+        sendWs(ws, { type: "error", message: "Permission denied for session:update" });
+        return;
+      }
+      const text = String(payload.text || "").trim();
+      if (!text) {
+        sendWs(ws, { type: "error", message: "text is required" });
+        return;
+      }
+
+      const sender = users.find((item) => item.id === ws.auth.sub);
+      const message = {
+        id: createId("msg"),
+        senderRole: ws.auth.role,
+        senderName: sender?.name || ws.auth.name || "User",
+        text,
+        timestamp: new Date().toISOString()
+      };
+      session.messages.push(message);
+      persistDb();
+      broadcastToSession(sessionId, { type: "chat", sessionId, message });
+      return;
+    }
+
+    if (payload.type === "signal") {
+      if (!hasPermission(ws.auth.role, "session", "update")) {
+        sendWs(ws, { type: "error", message: "Permission denied for session:update" });
+        return;
+      }
+      const signalType = String(payload.signalType || "");
+      if (!["offer", "answer", "ice"].includes(signalType)) {
+        sendWs(ws, { type: "error", message: "Invalid signal type" });
+        return;
+      }
+
+      broadcastToSession(
+        sessionId,
+        {
+          type: "signal",
+          sessionId,
+          signalType,
+          payload: payload.payload ?? null,
+          from: { id: ws.auth.sub, role: ws.auth.role, name: ws.auth.name }
+        },
+        ws
+      );
+      return;
+    }
+
+    if (payload.type === "leave") {
+      const room = liveSessionSockets.get(sessionId);
+      if (room) {
+        room.delete(ws);
+        if (room.size === 0) {
+          liveSessionSockets.delete(sessionId);
+        }
+      }
+      ws.sessionIds.delete(sessionId);
+      sendWs(ws, { type: "left", sessionId });
+      return;
+    }
+
+    sendWs(ws, { type: "error", message: "Unsupported event type" });
+  });
+
+  ws.on("close", () => {
+    cleanupSocketRooms(ws);
+  });
+});
+
+const server = httpServer.listen(PORT, () => {
   console.log(`AI Medical chatbot server running on http://localhost:${PORT}`);
 });
 
 async function gracefulShutdown(signal) {
   console.log(`Received ${signal}. Shutting down server...`);
   server.close(async () => {
+    wsServer.clients.forEach((client) => {
+      try {
+        client.close(1001, "Server shutdown");
+      } catch (_error) {
+        // no-op
+      }
+    });
     if (mongoClient) {
       try {
         await mongoClient.close();

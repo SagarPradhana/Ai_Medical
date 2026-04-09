@@ -4,6 +4,7 @@ import { useAuth } from "../../context/AuthContext";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 import NotificationModal from "./NotificationModal";
+import ToastViewport from "./ToastViewport";
 
 function PortalLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -38,6 +39,7 @@ function PortalLayout() {
         </main>
       </div>
       <NotificationModal />
+      <ToastViewport />
     </div>
   );
 }

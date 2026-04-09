@@ -1,24 +1,9 @@
 import PageHeader from "../../components/common/PageHeader";
-
-const notifications = [
-  {
-    priority: "High",
-    title: "Emergency escalation pending",
-    message: "Patient PT-0091 flagged for chest pain and low oxygen trend."
-  },
-  {
-    priority: "Medium",
-    title: "Doctor shift overlap",
-    message: "Evening shift has 2 overlapping general medicine assignments."
-  },
-  {
-    priority: "Low",
-    title: "Report ready",
-    message: "Weekly outpatient analytics report is available for review."
-  }
-];
+import { useNotifications } from "../../context/NotificationContext";
 
 function NotificationsPage() {
+  const { notifications } = useNotifications();
+
   return (
     <section className="page-grid">
       <PageHeader
@@ -29,8 +14,8 @@ function NotificationsPage() {
         <h3>Recent Alerts</h3>
         <div className="alert-stack">
           {notifications.map((item) => (
-            <article key={item.title} className="alert-item">
-              <span className={`status-pill ${item.priority.toLowerCase()}`}>
+            <article key={item.id} className="alert-item">
+              <span className={`status-pill ${String(item.priority || "low").toLowerCase()}`}>
                 {item.priority}
               </span>
               <div>

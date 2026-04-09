@@ -29,15 +29,58 @@ const seedNotifications = [
   }
 ];
 
+function nowTimeLabel() {
+  return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
 export function NotificationProvider({ children }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [notifications, setNotifications] = useState(seedNotifications);
+  const [toasts, setToasts] = useState([]);
 
   const unreadCount = notifications.filter((item) => !item.read).length;
+
+  const addNotification = ({ title, message, priority = "low", read = false }) => {
+    const item = {
+      id: `n-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+      title,
+      message,
+      priority,
+      read,
+      time: nowTimeLabel()
+    };
+    setNotifications((prev) => [item, ...prev].slice(0, 50));
+    return item;
+  };
+
+  const removeToast = (id) => {
+    setToasts((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const pushToast = ({ type = "info", title, message, priority = "low", ttl = 3600 }) => {
+    const id = `t-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+    const toast = { id, type, title, message };
+    setToasts((prev) => [toast, ...prev].slice(0, 5));
+    addNotification({ title, message, priority, read: false });
+    setTimeout(() => {
+      removeToast(id);
+    }, ttl);
+    return toast;
+  };
+
+  const notifySuccess = (message, title = "Success") =>
+    pushToast({ type: "success", title, message, priority: "low" });
+
+  const notifyError = (message, title = "Failed") =>
+    pushToast({ type: "error", title, message, priority: "high", ttl: 5000 });
+
+  const notifyInfo = (message, title = "Info") =>
+    pushToast({ type: "info", title, message, priority: "medium" });
 
   const value = useMemo(
     () => ({
       notifications,
+      toasts,
       unreadCount,
       isModalOpen,
       openModal: () => setIsModalOpen(true),
@@ -48,9 +91,14 @@ export function NotificationProvider({ children }) {
         ),
       markAllRead: () =>
         setNotifications((prev) => prev.map((item) => ({ ...item, read: true }))),
-      clearRead: () => setNotifications((prev) => prev.filter((item) => !item.read))
+      clearRead: () => setNotifications((prev) => prev.filter((item) => !item.read)),
+      removeToast,
+      addNotification,
+      notifySuccess,
+      notifyError,
+      notifyInfo
     }),
-    [isModalOpen, notifications, unreadCount]
+    [isModalOpen, notifications, toasts, unreadCount]
   );
 
   return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>;

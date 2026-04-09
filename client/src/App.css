@@ -1111,6 +1111,66 @@ table tbody tr:hover {
   height: fit-content;
 }
 
+.toast-viewport {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 80;
+  width: min(380px, calc(100vw - 20px));
+  display: grid;
+  gap: 8px;
+}
+
+.toast-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: start;
+  border: 1px solid #c9ddeb;
+  border-left-width: 4px;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: var(--shadow);
+  padding: 10px;
+  animation: rise-in 0.2s ease both;
+}
+
+.toast-item.success {
+  border-left-color: #16956f;
+}
+
+.toast-item.error {
+  border-left-color: #c34135;
+}
+
+.toast-item.info {
+  border-left-color: #2e78a7;
+}
+
+.toast-icon {
+  margin-top: 2px;
+  color: #2e6e95;
+}
+
+.toast-body h4 {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.toast-body p {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.toast-item button {
+  border: none;
+  background: transparent;
+  color: #5f798c;
+  cursor: pointer;
+  padding: 0;
+}
+
 .crud-modal-wrap {
   position: fixed;
   inset: 0;

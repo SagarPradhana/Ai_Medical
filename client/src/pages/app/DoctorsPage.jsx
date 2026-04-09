@@ -17,6 +17,7 @@ import PageHeader from "../../components/common/PageHeader";
 import FuturisticModal from "../../components/common/FuturisticModal";
 import DataPagination from "../../components/common/DataPagination";
 import { useAuth } from "../../context/AuthContext";
+import { useNotifications } from "../../context/NotificationContext";
 import { apiFetch } from "../../utils/api";
 import { canPerform } from "../../utils/permissions";
 
@@ -49,6 +50,7 @@ function StatCard({ title, value, icon: Icon }) {
 
 function DoctorsPage() {
   const { user } = useAuth();
+  const { notifySuccess, notifyError } = useNotifications();
   const [searchParams] = useSearchParams();
   const [view, setView] = useState("grid");
   const [doctors, setDoctors] = useState([]);
@@ -86,6 +88,7 @@ function DoctorsPage() {
       setDepartmentOptions(departmentRes.data || []);
     } catch (fetchError) {
       setError(fetchError.message);
+      notifyError(fetchError.message, "Doctors load failed");
     }
   };
 
@@ -153,8 +156,10 @@ function DoctorsPage() {
       }
       setModalOpen(false);
       await loadDoctors();
+      notifySuccess(editingId ? "Doctor updated successfully." : "Doctor created successfully.", "Doctors");
     } catch (submitError) {
       setError(submitError.message);
+      notifyError(submitError.message, "Doctor save failed");
     }
   };
 
@@ -165,8 +170,10 @@ function DoctorsPage() {
       await apiFetch(`/doctors/${deleteTarget.id}`, { method: "DELETE" });
       setDeleteTarget(null);
       await loadDoctors();
+      notifySuccess("Doctor deleted successfully.", "Doctors");
     } catch (removeError) {
       setError(removeError.message);
+      notifyError(removeError.message, "Doctor delete failed");
     }
   };
 

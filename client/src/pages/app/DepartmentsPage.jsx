@@ -13,11 +13,13 @@ import {
 import PageHeader from "../../components/common/PageHeader";
 import FuturisticModal from "../../components/common/FuturisticModal";
 import { useAuth } from "../../context/AuthContext";
+import { useNotifications } from "../../context/NotificationContext";
 import { apiFetch } from "../../utils/api";
 import { canPerform } from "../../utils/permissions";
 
 function DepartmentsPage() {
   const { user } = useAuth();
+  const { notifySuccess, notifyError } = useNotifications();
   const [searchParams] = useSearchParams();
   const [records, setRecords] = useState([]);
   const [doctors, setDoctors] = useState([]);
@@ -48,6 +50,7 @@ function DepartmentsPage() {
       setPatients(patientRes.data || []);
     } catch (fetchError) {
       setError(fetchError.message);
+      notifyError(fetchError.message, "Departments load failed");
     }
   };
 
@@ -96,8 +99,10 @@ function DepartmentsPage() {
       setCreateOpen(false);
       setFormName("");
       await loadData();
+      notifySuccess("Department created successfully.", "Departments");
     } catch (submitError) {
       setError(submitError.message);
+      notifyError(submitError.message, "Department create failed");
     }
   };
 
@@ -113,8 +118,10 @@ function DepartmentsPage() {
       setEditTarget(null);
       setFormName("");
       await loadData();
+      notifySuccess("Department updated successfully.", "Departments");
     } catch (submitError) {
       setError(submitError.message);
+      notifyError(submitError.message, "Department update failed");
     }
   };
 
@@ -125,8 +132,10 @@ function DepartmentsPage() {
       await apiFetch(`/departments/${deleteTarget.id}`, { method: "DELETE" });
       setDeleteTarget(null);
       await loadData();
+      notifySuccess("Department deleted successfully.", "Departments");
     } catch (submitError) {
       setError(submitError.message);
+      notifyError(submitError.message, "Department delete failed");
     }
   };
 

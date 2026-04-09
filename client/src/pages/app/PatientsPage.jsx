@@ -21,6 +21,7 @@ import PageHeader from "../../components/common/PageHeader";
 import FuturisticModal from "../../components/common/FuturisticModal";
 import DataPagination from "../../components/common/DataPagination";
 import { useAuth } from "../../context/AuthContext";
+import { useNotifications } from "../../context/NotificationContext";
 import { apiFetch } from "../../utils/api";
 import { canPerform } from "../../utils/permissions";
 
@@ -58,6 +59,7 @@ function StatCard({ title, value, icon }) {
 
 function PatientsPage() {
   const { user } = useAuth();
+  const { notifySuccess, notifyError, notifyInfo } = useNotifications();
   const [searchParams] = useSearchParams();
   const [patients, setPatients] = useState([]);
   const [view, setView] = useState("grid");
@@ -98,6 +100,7 @@ function PatientsPage() {
       setDepartmentOptions(departmentRes.data || []);
     } catch (fetchError) {
       setError(fetchError.message);
+      notifyError(fetchError.message, "Patients load failed");
     }
   };
 
@@ -125,6 +128,7 @@ Generated At: ${new Date().toISOString()}
     link.download = `${patient.id}-report.txt`;
     link.click();
     URL.revokeObjectURL(link.href);
+    notifyInfo(`Report downloaded for ${patient.name}.`, "Patient report");
   };
 
   const openCreateModal = () => {
@@ -188,8 +192,10 @@ Generated At: ${new Date().toISOString()}
       }
       setModalOpen(false);
       await loadPatients();
+      notifySuccess(editingId ? "Patient updated successfully." : "Patient created successfully.", "Patients");
     } catch (submitError) {
       setError(submitError.message);
+      notifyError(submitError.message, "Patient save failed");
     }
   };
 
@@ -202,8 +208,10 @@ Generated At: ${new Date().toISOString()}
       await apiFetch(`/patients/${deleteTarget.id}`, { method: "DELETE" });
       setDeleteTarget(null);
       await loadPatients();
+      notifySuccess("Patient deleted successfully.", "Patients");
     } catch (removeError) {
       setError(removeError.message);
+      notifyError(removeError.message, "Patient delete failed");
     }
   };
 

@@ -37,3 +37,19 @@ export async function apiFetch(path, options = {}, customToken = null) {
 
   return data;
 }
+
+export function getWsUrl(token) {
+  const explicit = import.meta.env.VITE_WS_URL?.replace(/\/$/, "");
+  if (explicit) {
+    return `${explicit}?token=${encodeURIComponent(token)}`;
+  }
+
+  const apiUrl = new URL(API_BASE, window.location.origin);
+  const protocol = apiUrl.protocol === "https:" ? "wss:" : "ws:";
+
+  if (apiUrl.host === window.location.host && API_BASE.startsWith("/")) {
+    return `${protocol}//${window.location.host}/ws?token=${encodeURIComponent(token)}`;
+  }
+
+  return `${protocol}//${apiUrl.host}/ws?token=${encodeURIComponent(token)}`;
+}
