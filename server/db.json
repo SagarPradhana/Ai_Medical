@@ -55,7 +55,7 @@
   ],
   "permissionEntries": [
     {
-      "id": "perm-1775713539179-2324",
+      "id": "perm-1775714911533-2711",
       "role": "admin",
       "resource": "doctor",
       "actions": [
@@ -66,7 +66,7 @@
       ]
     },
     {
-      "id": "perm-1775713539179-2564",
+      "id": "perm-1775714911533-3570",
       "role": "admin",
       "resource": "patient",
       "actions": [
@@ -77,7 +77,7 @@
       ]
     },
     {
-      "id": "perm-1775713539179-8345",
+      "id": "perm-1775714911533-9598",
       "role": "admin",
       "resource": "appointment",
       "actions": [
@@ -88,7 +88,7 @@
       ]
     },
     {
-      "id": "perm-1775713539179-8330",
+      "id": "perm-1775714911533-7890",
       "role": "admin",
       "resource": "rbac",
       "actions": [
@@ -99,7 +99,7 @@
       ]
     },
     {
-      "id": "perm-1775713539179-3459",
+      "id": "perm-1775714911533-3993",
       "role": "admin",
       "resource": "session",
       "actions": [
@@ -110,7 +110,7 @@
       ]
     },
     {
-      "id": "perm-1775713539179-1769",
+      "id": "perm-1775714911533-4114",
       "role": "admin",
       "resource": "record",
       "actions": [
@@ -121,7 +121,7 @@
       ]
     },
     {
-      "id": "perm-1775713539179-2403",
+      "id": "perm-1775714911533-9627",
       "role": "admin",
       "resource": "department",
       "actions": [
@@ -132,7 +132,7 @@
       ]
     },
     {
-      "id": "perm-1775713539179-4397",
+      "id": "perm-1775714911533-9500",
       "role": "doctor",
       "resource": "doctor",
       "actions": [
@@ -141,7 +141,7 @@
       ]
     },
     {
-      "id": "perm-1775713539179-110",
+      "id": "perm-1775714911533-5903",
       "role": "doctor",
       "resource": "patient",
       "actions": [
@@ -151,7 +151,7 @@
       ]
     },
     {
-      "id": "perm-1775713539179-7423",
+      "id": "perm-1775714911533-670",
       "role": "doctor",
       "resource": "appointment",
       "actions": [
@@ -161,7 +161,7 @@
       ]
     },
     {
-      "id": "perm-1775713539179-8466",
+      "id": "perm-1775714911533-3784",
       "role": "doctor",
       "resource": "session",
       "actions": [
@@ -171,7 +171,7 @@
       ]
     },
     {
-      "id": "perm-1775713539179-6233",
+      "id": "perm-1775714911533-7332",
       "role": "doctor",
       "resource": "record",
       "actions": [
@@ -181,7 +181,7 @@
       ]
     },
     {
-      "id": "perm-1775713539179-2168",
+      "id": "perm-1775714911533-3512",
       "role": "doctor",
       "resource": "department",
       "actions": [
@@ -189,7 +189,7 @@
       ]
     },
     {
-      "id": "perm-1775713539179-9903",
+      "id": "perm-1775714911533-910",
       "role": "patient",
       "resource": "doctor",
       "actions": [
@@ -197,7 +197,7 @@
       ]
     },
     {
-      "id": "perm-1775713539179-3236",
+      "id": "perm-1775714911533-7259",
       "role": "patient",
       "resource": "patient",
       "actions": [
@@ -206,7 +206,7 @@
       ]
     },
     {
-      "id": "perm-1775713539179-1648",
+      "id": "perm-1775714911533-6842",
       "role": "patient",
       "resource": "appointment",
       "actions": [
@@ -217,7 +217,7 @@
       ]
     },
     {
-      "id": "perm-1775713539179-317",
+      "id": "perm-1775714911533-5579",
       "role": "patient",
       "resource": "session",
       "actions": [
@@ -227,7 +227,7 @@
       ]
     },
     {
-      "id": "perm-1775713539179-4665",
+      "id": "perm-1775714911533-5617",
       "role": "patient",
       "resource": "record",
       "actions": [
@@ -235,7 +235,7 @@
       ]
     },
     {
-      "id": "perm-1775713539179-7122",
+      "id": "perm-1775714911533-9555",
       "role": "patient",
       "resource": "department",
       "actions": [

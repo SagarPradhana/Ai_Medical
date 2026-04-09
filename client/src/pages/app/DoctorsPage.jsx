@@ -67,6 +67,7 @@ function DoctorsPage() {
   const [form, setForm] = useState({
     name: "",
     department: "",
+    password: "",
     experience: 0,
     status: "On Duty",
     email: "",
@@ -102,6 +103,7 @@ function DoctorsPage() {
     setForm({
       name: "",
       department: departmentOptions[0] || "",
+      password: "",
       experience: 0,
       status: "On Duty",
       email: "",
@@ -118,6 +120,7 @@ function DoctorsPage() {
     setForm({
       name: item.name || "",
       department: item.department || item.specialization || "",
+      password: "",
       experience: item.experience || 0,
       status: item.status || "On Duty",
       email: item.email || "",
@@ -134,6 +137,9 @@ function DoctorsPage() {
         ...form,
         specialization: form.department
       };
+      if (editingId) {
+        delete payload.password;
+      }
       if (editingId) {
         await apiFetch(`/doctors/${editingId}`, {
           method: "PUT",
@@ -449,6 +455,20 @@ function DoctorsPage() {
                 ))}
               </select>
             </label>
+
+            {!editingId ? (
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-slate-600">Login Password</span>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={form.password}
+                  onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
+                  className="w-full rounded-[12px] border border-slate-200 bg-slate-50 py-2.5 px-3 text-sm outline-none ring-sky-200 transition focus:ring"
+                />
+              </label>
+            ) : null}
           </div>
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">

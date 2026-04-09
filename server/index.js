@@ -1020,30 +1020,119 @@ app.put("/api/rbac/users/:id/role", authenticateToken, requirePermission("rbac",
   });
 });
 
+app.post("/api/rbac/sync-linked-users", authenticateToken, requirePermission("rbac", "update"), async (req, res) => {
+  const defaultPassword = String(req.body?.defaultPassword || "").trim();
+  if (!defaultPassword || defaultPassword.length < 6) {
+    return res.status(400).json({ error: "defaultPassword is required and must be at least 6 characters" });
+  }
+
+  const skipped = [];
+  const created = [];
+  const seenEmails = new Set(users.map((item) => item.email));
+
+  for (const doctor of doctors) {
+    const alreadyLinked = users.some((item) => item.doctorRef === doctor.id);
+    if (alreadyLinked) {
+      continue;
+    }
+    const email = String(doctor.email || "").toLowerCase().trim();
+    if (!email || seenEmails.has(email)) {
+      skipped.push({ type: "doctor", id: doctor.id, name: doctor.name, reason: "missing/duplicate email" });
+      continue;
+    }
+    users.push({
+      id: createId("u"),
+      name: doctor.name || "Doctor",
+      email,
+      role: "doctor",
+      position: "doctor",
+      passwordHash: await bcrypt.hash(defaultPassword, 10),
+      doctorRef: doctor.id,
+      patientRef: null
+    });
+    seenEmails.add(email);
+    created.push({ type: "doctor", id: doctor.id, email });
+  }
+
+  for (const patient of patients) {
+    const alreadyLinked = users.some((item) => item.patientRef === patient.id);
+    if (alreadyLinked) {
+      continue;
+    }
+    const email = String(patient.email || "").toLowerCase().trim();
+    if (!email || seenEmails.has(email)) {
+      skipped.push({ type: "patient", id: patient.id, name: patient.name, reason: "missing/duplicate email" });
+      continue;
+    }
+    users.push({
+      id: createId("u"),
+      name: patient.name || "Patient",
+      email,
+      role: "patient",
+      position: "patient",
+      passwordHash: await bcrypt.hash(defaultPassword, 10),
+      doctorRef: null,
+      patientRef: patient.id
+    });
+    seenEmails.add(email);
+    created.push({ type: "patient", id: patient.id, email });
+  }
+
+  persistDb();
+  return res.json({
+    message: "Linked user sync completed",
+    createdCount: created.length,
+    skippedCount: skipped.length,
+    created,
+    skipped
+  });
+});
+
 app.get("/api/doctors", authenticateToken, requirePermission("doctor", "read"), (_req, res) => {
   return res.json({ data: doctors });
 });
 
-app.post("/api/doctors", authenticateToken, requirePermission("doctor", "create"), (req, res) => {
-  const { name, specialization, experience, status, email, phone, department } = req.body ?? {};
+app.post("/api/doctors", authenticateToken, requirePermission("doctor", "create"), async (req, res) => {
+  const { name, specialization, experience, status, email, phone, department, password } = req.body ?? {};
   if (!name) {
     return res.status(400).json({ error: "Doctor name is required" });
+  }
+  const normalizedEmail = String(email || "").toLowerCase().trim();
+  if (!normalizedEmail) {
+    return res.status(400).json({ error: "Doctor email is required" });
+  }
+  if (!password || String(password).length < 6) {
+    return res.status(400).json({ error: "Password is required and must be at least 6 characters" });
+  }
+  if (users.some((item) => item.email === normalizedEmail)) {
+    return res.status(409).json({ error: "Email already registered" });
   }
 
   const normalizedDepartment = normalizeDepartment(department || specialization);
   if (!departments.some((entry) => entry.name === normalizedDepartment)) {
     return res.status(400).json({ error: "Invalid department. Please create/select a department first." });
   }
+  const doctorId = createId("doc");
   const next = {
-    id: createId("doc"),
+    id: doctorId,
     name,
     specialization: specialization || normalizedDepartment,
     department: normalizedDepartment,
     experience: Number(experience || 0),
     status: status || "On Duty",
-    email: email || "",
+    email: normalizedEmail,
     phone: phone || ""
   };
+  users.push({
+    id: createId("u"),
+    name,
+    email: normalizedEmail,
+    role: "doctor",
+    position: "doctor",
+    passwordHash: await bcrypt.hash(String(password), 10),
+    doctorRef: doctorId,
+    patientRef: null
+  });
   doctors.push(next);
   persistDb();
   return res.status(201).json({ data: next });
@@ -1061,6 +1150,12 @@ app.put("/api/doctors/:id", authenticateToken, requirePermission("doctor", "upda
   }
 
   const incoming = { ...req.body };
+  if (incoming.email) {
+    incoming.email = String(incoming.email).toLowerCase().trim();
+    if (users.some((item) => item.email === incoming.email && item.doctorRef !== id)) {
+      return res.status(409).json({ error: "Email already registered" });
+    }
+  }
   if (incoming.department || incoming.specialization) {
     const normalizedDepartment = normalizeDepartment(incoming.department || incoming.specialization);
     if (!departments.some((entry) => entry.name === normalizedDepartment)) {
@@ -1071,6 +1166,11 @@ app.put("/api/doctors/:id", authenticateToken, requirePermission("doctor", "upda
   }
 
   doctors[idx] = { ...doctors[idx], ...incoming };
+  const linkedUser = users.find((item) => item.doctorRef === id);
+  if (linkedUser) {
+    linkedUser.name = doctors[idx].name || linkedUser.name;
+    linkedUser.email = doctors[idx].email || linkedUser.email;
+  }
   persistDb();
   return res.json({ data: doctors[idx] });
 });
@@ -1082,6 +1182,11 @@ app.delete("/api/doctors/:id", authenticateToken, requirePermission("doctor", "d
     return res.status(404).json({ error: "Doctor not found" });
   }
   const removed = doctors.splice(idx, 1)[0];
+  for (let i = users.length - 1; i >= 0; i -= 1) {
+    if (users[i].doctorRef === id) {
+      users.splice(i, 1);
+    }
+  }
   persistDb();
   return res.json({ data: removed });
 });
@@ -1094,28 +1199,49 @@ app.get("/api/patients", authenticateToken, requirePermission("patient", "read")
   return res.json({ data: patients });
 });
 
-app.post("/api/patients", authenticateToken, requirePermission("patient", "create"), (req, res) => {
-  const { name, age, gender, risk, status, nextVisit, email, condition, department } = req.body ?? {};
+app.post("/api/patients", authenticateToken, requirePermission("patient", "create"), async (req, res) => {
+  const { name, age, gender, risk, status, nextVisit, email, condition, department, password } = req.body ?? {};
   if (!name) {
     return res.status(400).json({ error: "Patient name is required" });
+  }
+  const normalizedEmail = String(email || "").toLowerCase().trim();
+  if (!normalizedEmail) {
+    return res.status(400).json({ error: "Patient email is required" });
+  }
+  if (!password || String(password).length < 6) {
+    return res.status(400).json({ error: "Password is required and must be at least 6 characters" });
+  }
+  if (users.some((item) => item.email === normalizedEmail)) {
+    return res.status(409).json({ error: "Email already registered" });
   }
   const normalizedDepartment = normalizeDepartment(department);
   if (!departments.some((entry) => entry.name === normalizedDepartment)) {
     return res.status(400).json({ error: "Invalid department. Please create/select a department first." });
   }
 
+  const patientId = createId("pat");
   const next = {
-    id: createId("pat"),
+    id: patientId,
     name,
     age: Number(age || 0),
     gender: gender || "Unknown",
     risk: risk || "Low",
     status: status || "New",
     nextVisit: nextVisit || "",
-    email: email || "",
+    email: normalizedEmail,
     condition: condition || "Not Assigned",
     department: normalizedDepartment
   };
+  users.push({
+    id: createId("u"),
+    name,
+    email: normalizedEmail,
+    role: "patient",
+    position: "patient",
+    passwordHash: await bcrypt.hash(String(password), 10),
+    doctorRef: null,
+    patientRef: patientId
+  });
   patients.push(next);
   persistDb();
   return res.status(201).json({ data: next });
@@ -1133,6 +1259,12 @@ app.put("/api/patients/:id", authenticateToken, requirePermission("patient", "up
   }
 
   const incoming = { ...req.body };
+  if (incoming.email) {
+    incoming.email = String(incoming.email).toLowerCase().trim();
+    if (users.some((item) => item.email === incoming.email && item.patientRef !== id)) {
+      return res.status(409).json({ error: "Email already registered" });
+    }
+  }
   if (incoming.department) {
     const normalizedDepartment = normalizeDepartment(incoming.department);
     if (!departments.some((entry) => entry.name === normalizedDepartment)) {
@@ -1141,6 +1273,11 @@ app.put("/api/patients/:id", authenticateToken, requirePermission("patient", "up
     incoming.department = normalizedDepartment;
   }
   patients[idx] = { ...patients[idx], ...incoming };
+  const linkedUser = users.find((item) => item.patientRef === id);
+  if (linkedUser) {
+    linkedUser.name = patients[idx].name || linkedUser.name;
+    linkedUser.email = patients[idx].email || linkedUser.email;
+  }
   persistDb();
   return res.json({ data: patients[idx] });
 });
@@ -1220,6 +1357,11 @@ app.delete("/api/patients/:id", authenticateToken, requirePermission("patient", 
     return res.status(404).json({ error: "Patient not found" });
   }
   const removed = patients.splice(idx, 1)[0];
+  for (let i = users.length - 1; i >= 0; i -= 1) {
+    if (users[i].patientRef === id) {
+      users.splice(i, 1);
+    }
+  }
   persistDb();
   return res.json({ data: removed });
 });

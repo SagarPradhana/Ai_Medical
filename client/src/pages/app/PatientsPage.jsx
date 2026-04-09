@@ -81,6 +81,7 @@ function PatientsPage() {
     status: "New",
     nextVisit: "",
     email: "",
+    password: "",
     condition: "",
     department: ""
   });
@@ -139,6 +140,7 @@ Generated At: ${new Date().toISOString()}
       status: "New",
       nextVisit: "",
       email: "",
+      password: "",
       condition: "",
       department: departmentOptions[0] || ""
     });
@@ -158,6 +160,7 @@ Generated At: ${new Date().toISOString()}
       status: item.status || "New",
       nextVisit: item.nextVisit || "",
       email: item.email || "",
+      password: "",
       condition: item.condition || "",
       department: item.department || ""
     });
@@ -168,15 +171,19 @@ Generated At: ${new Date().toISOString()}
     event.preventDefault();
     try {
       setError("");
+      const payload = { ...form };
+      if (editingId) {
+        delete payload.password;
+      }
       if (editingId) {
         await apiFetch(`/patients/${editingId}`, {
           method: "PUT",
-          body: JSON.stringify(form)
+          body: JSON.stringify(payload)
         });
       } else {
         await apiFetch("/patients", {
           method: "POST",
-          body: JSON.stringify(form)
+          body: JSON.stringify(payload)
         });
       }
       setModalOpen(false);
@@ -516,6 +523,20 @@ Generated At: ${new Date().toISOString()}
                 className="w-full rounded-[12px] border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm outline-none ring-sky-200 transition focus:ring"
               />
             </label>
+
+            {!editingId ? (
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-slate-600">Login Password</span>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={form.password}
+                  onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
+                  className="w-full rounded-[12px] border border-slate-200 bg-slate-50 py-2.5 px-3 text-sm outline-none ring-sky-200 transition focus:ring"
+                />
+              </label>
+            ) : null}
           </div>
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
