@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   FaArrowDownWideShort,
   FaFilter,
   FaFloppyDisk,
+  FaHospital,
   FaList,
   FaPenToSquare,
   FaTableCellsLarge,
@@ -47,6 +49,7 @@ function StatCard({ title, value, icon: Icon }) {
 
 function DoctorsPage() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [view, setView] = useState("grid");
   const [doctors, setDoctors] = useState([]);
   const [editingId, setEditingId] = useState(null);
@@ -55,13 +58,15 @@ function DoctorsPage() {
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [departmentFilter, setDepartmentFilter] = useState(searchParams.get("department") || "All");
+  const [departmentOptions, setDepartmentOptions] = useState([]);
   const [sortBy, setSortBy] = useState("name_asc");
   const [page, setPage] = useState(1);
   const pageSize = 6;
 
   const [form, setForm] = useState({
     name: "",
-    specialization: "",
+    department: "",
     experience: 0,
     status: "On Duty",
     email: "",
@@ -75,8 +80,9 @@ function DoctorsPage() {
   const loadDoctors = async () => {
     try {
       setError("");
-      const data = await apiFetch("/doctors");
-      setDoctors(data.data || []);
+      const [doctorRes, departmentRes] = await Promise.all([apiFetch("/doctors"), apiFetch("/departments")]);
+      setDoctors(doctorRes.data || []);
+      setDepartmentOptions(departmentRes.data || []);
     } catch (fetchError) {
       setError(fetchError.message);
     }
@@ -86,12 +92,16 @@ function DoctorsPage() {
     loadDoctors();
   }, []);
 
+  useEffect(() => {
+    setDepartmentFilter(searchParams.get("department") || "All");
+  }, [searchParams]);
+
   const openCreateModal = () => {
     if (!canCreate) return;
     setEditingId(null);
     setForm({
       name: "",
-      specialization: "",
+      department: departmentOptions[0] || "",
       experience: 0,
       status: "On Duty",
       email: "",
@@ -107,7 +117,7 @@ function DoctorsPage() {
     setEditingId(item.id);
     setForm({
       name: item.name || "",
-      specialization: item.specialization || "",
+      department: item.department || item.specialization || "",
       experience: item.experience || 0,
       status: item.status || "On Duty",
       email: item.email || "",
@@ -120,15 +130,19 @@ function DoctorsPage() {
     event.preventDefault();
     try {
       setError("");
+      const payload = {
+        ...form,
+        specialization: form.department
+      };
       if (editingId) {
         await apiFetch(`/doctors/${editingId}`, {
           method: "PUT",
-          body: JSON.stringify(form)
+          body: JSON.stringify(payload)
         });
       } else {
         await apiFetch("/doctors", {
           method: "POST",
-          body: JSON.stringify(form)
+          body: JSON.stringify(payload)
         });
       }
       setModalOpen(false);
@@ -154,9 +168,11 @@ function DoctorsPage() {
     const total = doctors.length;
     const available = doctors.filter((d) => d.status === "On Duty").length;
     const onLeave = doctors.filter((d) => d.status === "On Leave").length;
-    const specialists = new Set(doctors.map((d) => d.specialization).filter(Boolean)).size;
+      const specialists = new Set(doctors.map((d) => d.department || d.specialization).filter(Boolean)).size;
     return { total, available, onLeave, specialists };
   }, [doctors]);
+
+  const departments = useMemo(() => ["All", ...departmentOptions], [departmentOptions]);
 
   const processed = useMemo(() => {
     let rows = [...doctors];
@@ -175,6 +191,10 @@ function DoctorsPage() {
       rows = rows.filter((item) => item.status === statusFilter);
     }
 
+    if (departmentFilter !== "All") {
+      rows = rows.filter((item) => (item.department || item.specialization) === departmentFilter);
+    }
+
     rows.sort((a, b) => {
       if (sortBy === "name_asc") return String(a.name).localeCompare(String(b.name));
       if (sortBy === "name_desc") return String(b.name).localeCompare(String(a.name));
@@ -182,13 +202,13 @@ function DoctorsPage() {
     });
 
     return rows;
-  }, [doctors, query, statusFilter, sortBy]);
+  }, [doctors, query, statusFilter, departmentFilter, sortBy]);
 
   const totalPages = Math.max(1, Math.ceil(processed.length / pageSize));
 
   useEffect(() => {
     setPage(1);
-  }, [query, statusFilter, sortBy]);
+  }, [query, statusFilter, departmentFilter, sortBy]);
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
@@ -242,7 +262,7 @@ function DoctorsPage() {
           ) : null}
         </div>
 
-        <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-3">
+        <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-4">
           <div className="relative">
             <FaUserDoctor className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
@@ -278,6 +298,19 @@ function DoctorsPage() {
               <option value="exp_desc">Sort: Experience High-Low</option>
             </select>
           </div>
+
+          <div className="relative">
+            <FaHospital className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <select
+              value={departmentFilter}
+              onChange={(event) => setDepartmentFilter(event.target.value)}
+              className="w-full appearance-none rounded-[12px] border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm outline-none ring-sky-200 transition focus:ring"
+            >
+              {departments.map((item) => (
+                <option key={item} value={item}>{item}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -297,7 +330,7 @@ function DoctorsPage() {
               </div>
 
               <div className="space-y-1.5 text-sm text-slate-600">
-                <p><span className="font-medium text-slate-700">Specialization:</span> {doctor.specialization || "-"}</p>
+                <p><span className="font-medium text-slate-700">Specialization / Department:</span> {doctor.department || doctor.specialization || "-"}</p>
                 <p><span className="font-medium text-slate-700">Experience:</span> {doctor.experience || 0} years</p>
                 <p><span className="font-medium text-slate-700">Email:</span> {doctor.email || "-"}</p>
                 <p><span className="font-medium text-slate-700">Phone:</span> {doctor.phone || "-"}</p>
@@ -335,7 +368,7 @@ function DoctorsPage() {
               <thead>
                 <tr>
                   <th>Doctor</th>
-                  <th>Specialization</th>
+                  <th>Specialization / Department</th>
                   <th>Experience</th>
                   <th>Status</th>
                   <th>Email</th>
@@ -349,7 +382,7 @@ function DoctorsPage() {
                       <p className="font-semibold text-slate-800">{doctor.name}</p>
                       <p className="text-xs text-slate-500">{doctor.id}</p>
                     </td>
-                    <td>{doctor.specialization || "-"}</td>
+                    <td>{doctor.department || doctor.specialization || "-"}</td>
                     <td>{doctor.experience || 0} yrs</td>
                     <td><StatusBadge status={doctor.status} /></td>
                     <td>{doctor.email || "-"}</td>
@@ -403,12 +436,18 @@ function DoctorsPage() {
             </label>
 
             <label className="block">
-              <span className="mb-1 block text-sm font-medium text-slate-600">Specialization</span>
-              <input
-                value={form.specialization}
-                onChange={(event) => setForm((prev) => ({ ...prev, specialization: event.target.value }))}
-                className="w-full rounded-[12px] border border-slate-200 bg-slate-50 py-2.5 px-3 text-sm outline-none ring-sky-200 transition focus:ring"
-              />
+              <span className="mb-1 block text-sm font-medium text-slate-600">Specialization / Department</span>
+              <select
+                value={form.department}
+                onChange={(event) => setForm((prev) => ({ ...prev, department: event.target.value }))}
+                required
+                className="w-full appearance-none rounded-[12px] border border-slate-200 bg-slate-50 py-2.5 px-3 text-sm outline-none ring-sky-200 transition focus:ring"
+              >
+                <option value="">Select department</option>
+                {departmentOptions.map((item) => (
+                  <option key={item} value={item}>{item}</option>
+                ))}
+              </select>
             </label>
           </div>
 

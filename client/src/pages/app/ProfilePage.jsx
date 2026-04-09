@@ -10,6 +10,7 @@ function ProfilePage() {
       { label: "Full Name", value: user?.name || "-" },
       { label: "Email", value: user?.email || "-" },
       { label: "Role", value: user?.role || "-" },
+      { label: "Position", value: user?.position || user?.role || "-" },
       { label: "Organization", value: "AI Medical Health Network" },
       { label: "Status", value: "Active" }
     ],

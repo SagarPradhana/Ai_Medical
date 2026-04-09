@@ -20,6 +20,24 @@ export function AuthProvider({ children }) {
   const [auth, setAuth] = useState(readStoredAuth);
   const [isBootstrapping, setIsBootstrapping] = useState(true);
 
+  const refreshSession = async (tokenOverride = null) => {
+    const token = tokenOverride || auth?.token;
+    if (!token) {
+      return null;
+    }
+
+    const data = await apiFetch("/auth/me", {}, token);
+    const next = {
+      token,
+      user: data.user,
+      permissions: data.permissions || {},
+      isAuthenticated: true
+    };
+    setAuth(next);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    return next;
+  };
+
   useEffect(() => {
     const hydrateSession = async () => {
       const existing = readStoredAuth();
@@ -29,15 +47,7 @@ export function AuthProvider({ children }) {
       }
 
       try {
-        const data = await apiFetch("/auth/me", {}, existing.token);
-        const next = {
-          token: existing.token,
-          user: data.user,
-          permissions: data.permissions || {},
-          isAuthenticated: true
-        };
-        setAuth(next);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+        await refreshSession(existing.token);
       } catch (_error) {
         setAuth(null);
         localStorage.removeItem(STORAGE_KEY);
@@ -49,10 +59,11 @@ export function AuthProvider({ children }) {
     hydrateSession();
   }, []);
 
-  const login = async ({ role, email, password }) => {
+  const login = async ({ role, position, email, password }) => {
+    const selectedPosition = position || role;
     const data = await apiFetch("/auth/login", {
       method: "POST",
-      body: JSON.stringify({ role, email, password })
+      body: JSON.stringify({ position: selectedPosition, email, password })
     });
     const session = {
       token: data.token,
@@ -65,21 +76,11 @@ export function AuthProvider({ children }) {
     return data.user;
   };
 
-  const register = async ({ role, name, email, password }) => {
-    const data = await apiFetch("/auth/register", {
+  const register = async ({ role, name, email, password }) =>
+    apiFetch("/auth/register", {
       method: "POST",
       body: JSON.stringify({ role, name, email, password })
     });
-    const session = {
-      token: data.token,
-      user: data.user,
-      permissions: data.permissions || {},
-      isAuthenticated: true
-    };
-    setAuth(session);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
-    return data.user;
-  };
 
   const signout = () => {
     setAuth(null);
@@ -130,18 +131,3 @@ export function useAuth() {
   }
   return context;
 }
-  const refreshSession = async () => {
-    if (!auth?.token) {
-      return null;
-    }
-    const data = await apiFetch("/auth/me", {}, auth.token);
-    const next = {
-      token: auth.token,
-      user: data.user,
-      permissions: data.permissions || {},
-      isAuthenticated: true
-    };
-    setAuth(next);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    return next;
-  };

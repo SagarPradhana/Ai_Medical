@@ -51,6 +51,7 @@ const appointments = [];
 const liveSessions = [];
 const medicalRecords = [];
 const users = [];
+const departments = [];
 
 const roles = [
   { id: "role-admin", name: "admin", description: "Platform administrator", isSystem: true },
@@ -77,14 +78,37 @@ const permissionEntries = [
   { id: "perm-16", role: "patient", resource: "record", actions: ["read"] }
 ];
 
-const requiredPermissionSeeds = [
-  { role: "admin", resource: "session", actions: ["create", "read", "update", "delete"] },
-  { role: "doctor", resource: "session", actions: ["create", "read", "update"] },
-  { role: "patient", resource: "session", actions: ["create", "read", "update"] },
-  { role: "admin", resource: "record", actions: ["create", "read", "update", "delete"] },
-  { role: "doctor", resource: "record", actions: ["create", "read", "update", "delete"] },
-  { role: "patient", resource: "record", actions: ["read"] }
-];
+const SYSTEM_PERMISSION_TEMPLATE = {
+  admin: {
+    doctor: ["create", "read", "update", "delete"],
+    patient: ["create", "read", "update", "delete"],
+    appointment: ["create", "read", "update", "delete"],
+    rbac: ["create", "read", "update", "delete"],
+    session: ["create", "read", "update", "delete"],
+    record: ["create", "read", "update", "delete"],
+    department: ["create", "read", "update", "delete"]
+  },
+  doctor: {
+    doctor: ["read", "update"],
+    patient: ["create", "read", "update"],
+    appointment: ["create", "read", "update"],
+    session: ["create", "read", "update"],
+    record: ["create", "read", "update"],
+    department: ["read"]
+  },
+  patient: {
+    doctor: ["read"],
+    patient: ["read", "update"],
+    appointment: ["create", "read", "update", "delete"],
+    session: ["create", "read", "update"],
+    record: ["read"],
+    department: ["read"]
+  }
+};
+
+function normalizeDepartment(value) {
+  return String(value || "General Medicine").trim() || "General Medicine";
+}
 
 function dbSnapshot() {
   return {
@@ -94,6 +118,7 @@ function dbSnapshot() {
     liveSessions,
     medicalRecords,
     users,
+    departments,
     roles,
     permissionEntries
   };
@@ -106,6 +131,7 @@ const collectionMap = {
   liveSessions,
   medicalRecords,
   users,
+  departments,
   roles,
   permissionEntries
 };
@@ -144,6 +170,7 @@ async function ensureMongoIndexes() {
     await mongoDb.collection("appointments").createIndex({ patientId: 1, date: 1, time: 1 });
     await mongoDb.collection("liveSessions").createIndex({ appointmentId: 1, status: 1 });
     await mongoDb.collection("medicalRecords").createIndex({ patientId: 1, date: -1 });
+    await mongoDb.collection("departments").createIndex({ name: 1 }, { unique: true });
   } catch (error) {
     console.error("Failed to ensure MongoDB indexes:", error.message);
   }
@@ -223,6 +250,7 @@ async function initializeDb() {
       if (Array.isArray(payload.liveSessions)) syncCollection(liveSessions, payload.liveSessions);
       if (Array.isArray(payload.medicalRecords)) syncCollection(medicalRecords, payload.medicalRecords);
       if (Array.isArray(payload.users)) syncCollection(users, payload.users);
+      if (Array.isArray(payload.departments)) syncCollection(departments, payload.departments);
       if (Array.isArray(payload.roles)) syncCollection(roles, payload.roles);
       if (Array.isArray(payload.permissionEntries)) {
         syncCollection(permissionEntries, payload.permissionEntries);
@@ -236,15 +264,21 @@ async function initializeDb() {
   await ensureMongoIndexes();
   await loadMongoCollections();
 
-  requiredPermissionSeeds.forEach((seed) => {
-    const existing = permissionEntries.find(
-      (item) => item.role === seed.role && item.resource === seed.resource
-    );
-    if (!existing) {
-      permissionEntries.push({ id: createId("perm"), ...seed });
-      return;
+  const systemRoles = new Set(Object.keys(SYSTEM_PERMISSION_TEMPLATE));
+  for (let i = permissionEntries.length - 1; i >= 0; i -= 1) {
+    if (systemRoles.has(permissionEntries[i].role)) {
+      permissionEntries.splice(i, 1);
     }
-    existing.actions = [...new Set([...(existing.actions || []), ...seed.actions])];
+  }
+  Object.entries(SYSTEM_PERMISSION_TEMPLATE).forEach(([role, resourceMap]) => {
+    Object.entries(resourceMap).forEach(([resource, actions]) => {
+      permissionEntries.push({
+        id: createId("perm"),
+        role,
+        resource,
+        actions: [...actions]
+      });
+    });
   });
 
   const initAdminEmail = process.env.INIT_ADMIN_EMAIL?.toLowerCase().trim();
@@ -258,11 +292,42 @@ async function initializeDb() {
         name: initAdminName,
         email: initAdminEmail,
         role: "admin",
+        position: "admin",
         passwordHash: bcrypt.hashSync(initAdminPassword, 10),
         doctorRef: null,
         patientRef: null
       });
     }
+  }
+
+  users.forEach((item) => {
+    if (!item.role && item.position) {
+      item.role = item.position;
+    }
+    if (!item.position && item.role) {
+      item.position = item.role;
+    }
+  });
+
+  doctors.forEach((item) => {
+    item.department = normalizeDepartment(item.department || item.specialization);
+    if (!item.specialization) {
+      item.specialization = item.department;
+    }
+    if (!departments.some((entry) => entry.name === item.department)) {
+      departments.push({ id: createId("dept"), name: item.department });
+    }
+  });
+
+  patients.forEach((item) => {
+    item.department = normalizeDepartment(item.department);
+    if (!departments.some((entry) => entry.name === item.department)) {
+      departments.push({ id: createId("dept"), name: item.department });
+    }
+  });
+
+  if (departments.length === 0) {
+    departments.push({ id: createId("dept"), name: "General Medicine" });
   }
 
   await persistDb();
@@ -274,6 +339,7 @@ function sanitizeUser(user) {
     name: user.name,
     email: user.email,
     role: user.role,
+    position: user.position || user.role,
     doctorRef: user.doctorRef,
     patientRef: user.patientRef
   };
@@ -285,6 +351,7 @@ function issueToken(user) {
       sub: user.id,
       email: user.email,
       role: user.role,
+      position: user.position || user.role,
       name: user.name,
       doctorRef: user.doctorRef,
       patientRef: user.patientRef
@@ -576,7 +643,7 @@ app.get("/api/analytics/overview", authenticateToken, (req, res) => {
     if (!inRange) return false;
     if (department === "All Departments") return true;
     const doctor = doctors.find((d) => d.id === item.doctorId);
-    return (doctor?.specialization || "General") === department;
+    return normalizeDepartment(doctor?.department || doctor?.specialization) === department;
   });
 
   const totalPatients = patients.length;
@@ -597,7 +664,7 @@ app.get("/api/analytics/overview", authenticateToken, (req, res) => {
   }));
 
   const departmentUtilization = doctors.reduce((acc, doc) => {
-    const key = doc.specialization || "General";
+    const key = normalizeDepartment(doc.department || doc.specialization);
     if (!acc[key]) {
       acc[key] = { department: key, used: 0 };
     }
@@ -811,75 +878,13 @@ app.delete("/api/rbac/permissions/:id", authenticateToken, requirePermission("rb
 });
 
 app.post("/api/auth/register", async (req, res) => {
-  const { name, email, password, role } = req.body ?? {};
-
-  if (!name || !email || !password || !role) {
-    return res.status(400).json({ error: "name, email, password, role are required" });
-  }
-
-  if (!["doctor", "patient"].includes(role)) {
-    return res.status(400).json({ error: "role must be doctor or patient" });
-  }
-
-  const normalizedEmail = email.toLowerCase().trim();
-  const exists = users.some((user) => user.email === normalizedEmail);
-  if (exists) {
-    return res.status(409).json({ error: "Email already registered" });
-  }
-
-  const passwordHash = await bcrypt.hash(password, 10);
-  const baseUser = {
-    id: createId("u"),
-    name,
-    email: normalizedEmail,
-    role,
-    passwordHash,
-    doctorRef: null,
-    patientRef: null
-  };
-
-  if (role === "doctor") {
-    const doctorId = createId("doc");
-    doctors.push({
-      id: doctorId,
-      name,
-      specialization: "General Medicine",
-      experience: 1,
-      status: "On Duty",
-      email: normalizedEmail,
-      phone: ""
-    });
-    baseUser.doctorRef = doctorId;
-  }
-
-  if (role === "patient") {
-    const patientId = createId("pat");
-    patients.push({
-      id: patientId,
-      name,
-      age: 0,
-      gender: "Unknown",
-      risk: "Low",
-      status: "New",
-      nextVisit: "",
-      email: normalizedEmail,
-      condition: "Not Assigned"
-    });
-    baseUser.patientRef = patientId;
-  }
-
-  users.push(baseUser);
-  persistDb();
-  const token = issueToken(baseUser);
-  return res.status(201).json({
-    token,
-    user: sanitizeUser(baseUser),
-    permissions: getPermissionsByRole(baseUser.role)
+  return res.status(403).json({
+    error: "Self-registration is disabled. Please contact admin to create accounts."
   });
 });
 
 app.post("/api/auth/login", async (req, res) => {
-  const { email, password, role } = req.body ?? {};
+  const { email, password, role, position } = req.body ?? {};
 
   if (!email || !password) {
     return res.status(400).json({ error: "email and password are required" });
@@ -892,7 +897,9 @@ app.post("/api/auth/login", async (req, res) => {
     return res.status(401).json({ error: "Invalid credentials" });
   }
 
-  if (role && role !== user.role) {
+  const selectedPosition = position || role;
+  const effectivePosition = user.position || user.role;
+  if (selectedPosition && selectedPosition !== effectivePosition) {
     return res.status(403).json({ error: "Selected role does not match account role" });
   }
 
@@ -962,6 +969,7 @@ app.get("/api/rbac/users", authenticateToken, requirePermission("rbac", "read"),
     name: item.name,
     email: item.email,
     role: item.role,
+    position: item.position || item.role,
     doctorRef: item.doctorRef,
     patientRef: item.patientRef
   }));
@@ -984,7 +992,7 @@ app.put("/api/rbac/users/:id/role", authenticateToken, requirePermission("rbac",
   }
 
   const target = users[userIdx];
-  const next = { ...target, role };
+  const next = { ...target, role, position: role };
 
   if (role !== "doctor") {
     next.doctorRef = null;
@@ -1017,15 +1025,20 @@ app.get("/api/doctors", authenticateToken, requirePermission("doctor", "read"), 
 });
 
 app.post("/api/doctors", authenticateToken, requirePermission("doctor", "create"), (req, res) => {
-  const { name, specialization, experience, status, email, phone } = req.body ?? {};
+  const { name, specialization, experience, status, email, phone, department } = req.body ?? {};
   if (!name) {
     return res.status(400).json({ error: "Doctor name is required" });
   }
 
+  const normalizedDepartment = normalizeDepartment(department || specialization);
+  if (!departments.some((entry) => entry.name === normalizedDepartment)) {
+    return res.status(400).json({ error: "Invalid department. Please create/select a department first." });
+  }
   const next = {
     id: createId("doc"),
     name,
-    specialization: specialization || "General Medicine",
+    specialization: specialization || normalizedDepartment,
+    department: normalizedDepartment,
     experience: Number(experience || 0),
     status: status || "On Duty",
     email: email || "",
@@ -1047,7 +1060,17 @@ app.put("/api/doctors/:id", authenticateToken, requirePermission("doctor", "upda
     return res.status(403).json({ error: "Doctors can update only their own profile" });
   }
 
-  doctors[idx] = { ...doctors[idx], ...req.body };
+  const incoming = { ...req.body };
+  if (incoming.department || incoming.specialization) {
+    const normalizedDepartment = normalizeDepartment(incoming.department || incoming.specialization);
+    if (!departments.some((entry) => entry.name === normalizedDepartment)) {
+      return res.status(400).json({ error: "Invalid department. Please create/select a department first." });
+    }
+    incoming.department = normalizedDepartment;
+    incoming.specialization = normalizedDepartment;
+  }
+
+  doctors[idx] = { ...doctors[idx], ...incoming };
   persistDb();
   return res.json({ data: doctors[idx] });
 });
@@ -1072,9 +1095,13 @@ app.get("/api/patients", authenticateToken, requirePermission("patient", "read")
 });
 
 app.post("/api/patients", authenticateToken, requirePermission("patient", "create"), (req, res) => {
-  const { name, age, gender, risk, status, nextVisit, email, condition } = req.body ?? {};
+  const { name, age, gender, risk, status, nextVisit, email, condition, department } = req.body ?? {};
   if (!name) {
     return res.status(400).json({ error: "Patient name is required" });
+  }
+  const normalizedDepartment = normalizeDepartment(department);
+  if (!departments.some((entry) => entry.name === normalizedDepartment)) {
+    return res.status(400).json({ error: "Invalid department. Please create/select a department first." });
   }
 
   const next = {
@@ -1086,7 +1113,8 @@ app.post("/api/patients", authenticateToken, requirePermission("patient", "creat
     status: status || "New",
     nextVisit: nextVisit || "",
     email: email || "",
-    condition: condition || "Not Assigned"
+    condition: condition || "Not Assigned",
+    department: normalizedDepartment
   };
   patients.push(next);
   persistDb();
@@ -1104,9 +1132,85 @@ app.put("/api/patients/:id", authenticateToken, requirePermission("patient", "up
     return res.status(403).json({ error: "Patients can update only their own profile" });
   }
 
-  patients[idx] = { ...patients[idx], ...req.body };
+  const incoming = { ...req.body };
+  if (incoming.department) {
+    const normalizedDepartment = normalizeDepartment(incoming.department);
+    if (!departments.some((entry) => entry.name === normalizedDepartment)) {
+      return res.status(400).json({ error: "Invalid department. Please create/select a department first." });
+    }
+    incoming.department = normalizedDepartment;
+  }
+  patients[idx] = { ...patients[idx], ...incoming };
   persistDb();
   return res.json({ data: patients[idx] });
+});
+
+app.get("/api/departments", authenticateToken, requirePermission("department", "read"), (_req, res) => {
+  const sorted = [...departments].sort((a, b) => a.name.localeCompare(b.name));
+  return res.json({ data: sorted.map((item) => item.name), records: sorted });
+});
+
+app.post("/api/departments", authenticateToken, requirePermission("department", "create"), (req, res) => {
+  const name = normalizeDepartment(req.body?.name);
+  if (departments.some((item) => item.name.toLowerCase() === name.toLowerCase())) {
+    return res.status(409).json({ error: "Department already exists" });
+  }
+  const next = { id: createId("dept"), name };
+  departments.push(next);
+  persistDb();
+  return res.status(201).json({ data: next });
+});
+
+app.put("/api/departments/:id", authenticateToken, requirePermission("department", "update"), (req, res) => {
+  const { id } = req.params;
+  const idx = departments.findIndex((item) => item.id === id);
+  if (idx === -1) {
+    return res.status(404).json({ error: "Department not found" });
+  }
+
+  const name = normalizeDepartment(req.body?.name);
+  if (departments.some((item) => item.id !== id && item.name.toLowerCase() === name.toLowerCase())) {
+    return res.status(409).json({ error: "Department already exists" });
+  }
+
+  const previousName = departments[idx].name;
+  departments[idx] = { ...departments[idx], name };
+  doctors.forEach((item) => {
+    if (normalizeDepartment(item.department || item.specialization) === previousName) {
+      item.department = name;
+      item.specialization = name;
+    }
+  });
+  patients.forEach((item) => {
+    if (normalizeDepartment(item.department) === previousName) {
+      item.department = name;
+    }
+  });
+  persistDb();
+  return res.json({ data: departments[idx] });
+});
+
+app.delete("/api/departments/:id", authenticateToken, requirePermission("department", "delete"), (req, res) => {
+  const { id } = req.params;
+  const idx = departments.findIndex((item) => item.id === id);
+  if (idx === -1) {
+    return res.status(404).json({ error: "Department not found" });
+  }
+  const target = departments[idx];
+  const inUseByDoctor = doctors.some(
+    (item) => normalizeDepartment(item.department || item.specialization) === target.name
+  );
+  const inUseByPatient = patients.some((item) => normalizeDepartment(item.department) === target.name);
+  if (inUseByDoctor || inUseByPatient) {
+    return res.status(400).json({ error: "Department is in use by doctors/patients and cannot be deleted" });
+  }
+
+  const removed = departments.splice(idx, 1)[0];
+  if (departments.length === 0) {
+    departments.push({ id: createId("dept"), name: "General Medicine" });
+  }
+  persistDb();
+  return res.json({ data: removed });
 });
 
 app.delete("/api/patients/:id", authenticateToken, requirePermission("patient", "delete"), (req, res) => {

@@ -82,7 +82,7 @@ function Topbar({ onToggleSidebar, onToggleCollapse, user }) {
               <p className="account-name">{user?.name || "User"}</p>
               <p className="account-email">{user?.email || "-"}</p>
               <span className="account-role-pill">
-                <FaShield /> Role: {user?.role || "guest"}
+                <FaShield /> Role: {user?.position || user?.role || "guest"}
               </span>
             </div>
 

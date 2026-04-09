@@ -11,6 +11,7 @@ import {
   FaUsers
 } from "react-icons/fa6";
 import PageHeader from "../../components/common/PageHeader";
+import { useAuth } from "../../context/AuthContext";
 import { apiFetch } from "../../utils/api";
 
 function SaaSStatCard({ title, value, note, icon: Icon, border }) {
@@ -31,6 +32,7 @@ function SaaSStatCard({ title, value, note, icon: Icon, border }) {
 }
 
 function DashboardPage() {
+  const { user } = useAuth();
   const [payload, setPayload] = useState({
     stats: { totalPatients: 0, highRisk: 0, visitsToday: 0, newPatients: 0 },
     triageQueue: [],
@@ -67,12 +69,35 @@ function DashboardPage() {
 
   const riskTotal = Math.max(1, ...(payload.riskDistribution || []).map((item) => item.value || 0));
   const doctorTotal = Math.max(1, ...(payload.doctorAvailability || []).map((item) => item.value || 0));
+  const roleLabel = user?.role || "patient";
+
+  const quickLinks =
+    roleLabel === "admin"
+      ? [
+          { to: "/app/diagnosis-chat", label: "Diagnosis Chat", note: "AI symptom analyzer", icon: FaStethoscope },
+          { to: "/app/appointments", label: "Appointments", note: "Booking and queue control", icon: FaClock },
+          { to: "/app/doctors", label: "Doctors", note: "Availability and profiles", icon: FaUserDoctor },
+          { to: "/app/patients", label: "Patients", note: "Clinical records and risk", icon: FaUsers }
+        ]
+      : roleLabel === "doctor"
+        ? [
+            { to: "/app/appointments", label: "Appointments", note: "Manage consultations", icon: FaClock },
+            { to: "/app/patients", label: "Patients", note: "Add and review patient details", icon: FaUsers },
+            { to: "/app/doctors", label: "Doctors", note: "Doctor directory", icon: FaUserDoctor },
+            { to: "/app/live-sessions", label: "Live Sessions", note: "Consultation room", icon: FaStethoscope }
+          ]
+        : [
+            { to: "/app/appointments", label: "Appointments", note: "Book and track visits", icon: FaClock },
+            { to: "/app/live-sessions", label: "Live Sessions", note: "Video consultations", icon: FaStethoscope },
+            { to: "/app/medical-records", label: "Medical Records", note: "Your record history", icon: FaHospitalUser },
+            { to: "/app/doctors", label: "Doctors", note: "Find available doctors", icon: FaUserDoctor }
+          ];
 
   return (
     <section className="space-y-4">
       <PageHeader
-        title="Healthcare Operations Dashboard"
-        subtitle="Modern SaaS command center for patient flow, doctor capacity, and risk triage."
+        title={`${roleLabel.charAt(0).toUpperCase()}${roleLabel.slice(1)} Dashboard`}
+        subtitle="Modern command center for role-based healthcare operations."
       />
 
       {error ? <p className="rounded-[12px] border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">{error}</p> : null}
@@ -87,26 +112,16 @@ function DashboardPage() {
       <div className="rounded-[12px] border border-slate-200 bg-white p-4 shadow-soft">
         <h3 className="mb-3 text-base font-semibold text-slate-800">Quick Access</h3>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Link to="/app/diagnosis-chat" className="group rounded-[12px] border border-slate-200 bg-slate-50 p-4 transition hover:-translate-y-1 hover:border-cyan-300 hover:bg-cyan-50">
-            <div className="mb-2 inline-flex rounded-[10px] bg-white p-2 text-cyan-700 shadow-sm"><FaStethoscope /></div>
-            <p className="font-semibold text-slate-800">Diagnosis Chat</p>
-            <p className="text-xs text-slate-500">AI symptom analyzer</p>
-          </Link>
-          <Link to="/app/appointments" className="group rounded-[12px] border border-slate-200 bg-slate-50 p-4 transition hover:-translate-y-1 hover:border-cyan-300 hover:bg-cyan-50">
-            <div className="mb-2 inline-flex rounded-[10px] bg-white p-2 text-cyan-700 shadow-sm"><FaClock /></div>
-            <p className="font-semibold text-slate-800">Appointments</p>
-            <p className="text-xs text-slate-500">Booking and queue control</p>
-          </Link>
-          <Link to="/app/doctors" className="group rounded-[12px] border border-slate-200 bg-slate-50 p-4 transition hover:-translate-y-1 hover:border-cyan-300 hover:bg-cyan-50">
-            <div className="mb-2 inline-flex rounded-[10px] bg-white p-2 text-cyan-700 shadow-sm"><FaUserDoctor /></div>
-            <p className="font-semibold text-slate-800">Doctors</p>
-            <p className="text-xs text-slate-500">Availability and profiles</p>
-          </Link>
-          <Link to="/app/patients" className="group rounded-[12px] border border-slate-200 bg-slate-50 p-4 transition hover:-translate-y-1 hover:border-cyan-300 hover:bg-cyan-50">
-            <div className="mb-2 inline-flex rounded-[10px] bg-white p-2 text-cyan-700 shadow-sm"><FaUsers /></div>
-            <p className="font-semibold text-slate-800">Patients</p>
-            <p className="text-xs text-slate-500">Clinical records & risk</p>
-          </Link>
+          {quickLinks.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link key={item.to} to={item.to} className="group rounded-[12px] border border-slate-200 bg-slate-50 p-4 transition hover:-translate-y-1 hover:border-cyan-300 hover:bg-cyan-50">
+                <div className="mb-2 inline-flex rounded-[10px] bg-white p-2 text-cyan-700 shadow-sm"><Icon /></div>
+                <p className="font-semibold text-slate-800">{item.label}</p>
+                <p className="text-xs text-slate-500">{item.note}</p>
+              </Link>
+            );
+          })}
         </div>
       </div>
 

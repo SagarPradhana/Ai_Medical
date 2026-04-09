@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   FaArrowDownWideShort,
   FaDownload,
   FaEnvelope,
   FaFilter,
   FaFloppyDisk,
+  FaHospital,
   FaList,
   FaPenToSquare,
   FaTableCellsLarge,
@@ -56,6 +58,7 @@ function StatCard({ title, value, icon }) {
 
 function PatientsPage() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [patients, setPatients] = useState([]);
   const [view, setView] = useState("grid");
   const [editingId, setEditingId] = useState(null);
@@ -64,6 +67,8 @@ function PatientsPage() {
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [riskFilter, setRiskFilter] = useState("All");
+  const [departmentFilter, setDepartmentFilter] = useState(searchParams.get("department") || "All");
+  const [departmentOptions, setDepartmentOptions] = useState([]);
   const [sortBy, setSortBy] = useState("name_asc");
   const [page, setPage] = useState(1);
   const pageSize = 6;
@@ -76,7 +81,8 @@ function PatientsPage() {
     status: "New",
     nextVisit: "",
     email: "",
-    condition: ""
+    condition: "",
+    department: ""
   });
 
   const canCreate = canPerform(user?.role, "patient", "create");
@@ -86,8 +92,9 @@ function PatientsPage() {
   const loadPatients = async () => {
     try {
       setError("");
-      const data = await apiFetch("/patients");
-      setPatients(data.data || []);
+      const [patientRes, departmentRes] = await Promise.all([apiFetch("/patients"), apiFetch("/departments")]);
+      setPatients(patientRes.data || []);
+      setDepartmentOptions(departmentRes.data || []);
     } catch (fetchError) {
       setError(fetchError.message);
     }
@@ -97,12 +104,17 @@ function PatientsPage() {
     loadPatients();
   }, []);
 
+  useEffect(() => {
+    setDepartmentFilter(searchParams.get("department") || "All");
+  }, [searchParams]);
+
   const downloadReport = (patient) => {
     const content = `Patient Report
 ID: ${patient.id}
 Name: ${patient.name}
 Risk: ${patient.risk}
 Condition: ${patient.condition}
+Department: ${patient.department || "-"}
 Next Visit: ${patient.nextVisit}
 Generated At: ${new Date().toISOString()}
 `;
@@ -127,7 +139,8 @@ Generated At: ${new Date().toISOString()}
       status: "New",
       nextVisit: "",
       email: "",
-      condition: ""
+      condition: "",
+      department: departmentOptions[0] || ""
     });
     setModalOpen(true);
   };
@@ -145,7 +158,8 @@ Generated At: ${new Date().toISOString()}
       status: item.status || "New",
       nextVisit: item.nextVisit || "",
       email: item.email || "",
-      condition: item.condition || ""
+      condition: item.condition || "",
+      department: item.department || ""
     });
     setModalOpen(true);
   };
@@ -195,6 +209,8 @@ Generated At: ${new Date().toISOString()}
     return { total, highRisk, visitsToday, newPatients };
   }, [patients, todayIso]);
 
+  const departments = useMemo(() => ["All", ...departmentOptions], [departmentOptions]);
+
   const processed = useMemo(() => {
     let rows = [...patients];
 
@@ -212,6 +228,10 @@ Generated At: ${new Date().toISOString()}
       rows = rows.filter((item) => item.risk === riskFilter);
     }
 
+    if (departmentFilter !== "All") {
+      rows = rows.filter((item) => item.department === departmentFilter);
+    }
+
     rows.sort((a, b) => {
       if (sortBy === "name_asc") return String(a.name).localeCompare(String(b.name));
       if (sortBy === "name_desc") return String(b.name).localeCompare(String(a.name));
@@ -220,13 +240,13 @@ Generated At: ${new Date().toISOString()}
     });
 
     return rows;
-  }, [patients, query, riskFilter, sortBy]);
+  }, [patients, query, riskFilter, departmentFilter, sortBy]);
 
   const totalPages = Math.max(1, Math.ceil(processed.length / pageSize));
 
   useEffect(() => {
     setPage(1);
-  }, [query, riskFilter, sortBy]);
+  }, [query, riskFilter, departmentFilter, sortBy]);
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
@@ -280,7 +300,7 @@ Generated At: ${new Date().toISOString()}
           ) : null}
         </div>
 
-        <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-3">
+        <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-4">
           <div className="relative">
             <FaUser className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
@@ -318,6 +338,19 @@ Generated At: ${new Date().toISOString()}
               <option value="visit_asc">Sort: Next Visit</option>
             </select>
           </div>
+
+          <div className="relative">
+            <FaHospital className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <select
+              value={departmentFilter}
+              onChange={(event) => setDepartmentFilter(event.target.value)}
+              className="w-full appearance-none rounded-[12px] border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm outline-none ring-sky-200 transition focus:ring"
+            >
+              {departments.map((item) => (
+                <option key={item} value={item}>{item}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -352,6 +385,7 @@ Generated At: ${new Date().toISOString()}
                 <div className="space-y-1.5 text-sm text-slate-600">
                   <p><span className="font-medium text-slate-700">Condition:</span> {patient.condition || "-"}</p>
                   <p><span className="font-medium text-slate-700">Status:</span> {patient.status || "-"}</p>
+                  <p><span className="font-medium text-slate-700">Department:</span> {patient.department || "-"}</p>
                   <p><span className="font-medium text-slate-700">Next Visit:</span> {patient.nextVisit || "-"}</p>
                   <p><span className="font-medium text-slate-700">Email:</span> {patient.email || "-"}</p>
                 </div>
@@ -397,6 +431,7 @@ Generated At: ${new Date().toISOString()}
                   <th>Risk</th>
                   <th>Condition</th>
                   <th>Status</th>
+                  <th>Department</th>
                   <th>Next Visit</th>
                   <th>Actions</th>
                 </tr>
@@ -418,6 +453,7 @@ Generated At: ${new Date().toISOString()}
                     <td><RiskBadge risk={patient.risk} /></td>
                     <td>{patient.condition || "-"}</td>
                     <td>{patient.status || "-"}</td>
+                    <td>{patient.department || "-"}</td>
                     <td>{patient.nextVisit || "-"}</td>
                     <td className="table-actions-cell">
                       <button type="button" className="icon-action" onClick={() => downloadReport(patient)}>
@@ -544,6 +580,23 @@ Generated At: ${new Date().toISOString()}
               />
             </label>
 
+            <label className="block">
+              <span className="mb-1 block text-sm font-medium text-slate-600">Department</span>
+              <select
+                value={form.department}
+                onChange={(event) => setForm((prev) => ({ ...prev, department: event.target.value }))}
+                required
+                className="w-full appearance-none rounded-[12px] border border-slate-200 bg-slate-50 py-2.5 px-3 text-sm outline-none ring-sky-200 transition focus:ring"
+              >
+                <option value="">Select department</option>
+                {departmentOptions.map((item) => (
+                  <option key={item} value={item}>{item}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <label className="block">
               <span className="mb-1 block text-sm font-medium text-slate-600">Next Visit</span>
               <input

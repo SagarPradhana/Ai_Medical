@@ -82,8 +82,8 @@ function HomePage() {
                 <Link to="/auth/login" className="inline-flex items-center gap-2 rounded-[12px] bg-white px-5 py-3 text-sm font-semibold text-cyan-800 shadow-soft transition hover:-translate-y-0.5">
                   Launch Dashboard <FaArrowRight />
                 </Link>
-                <Link to="/auth/register" className="inline-flex items-center gap-2 rounded-[12px] border border-white/50 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20">
-                  Start Free Access
+                <Link to="/auth/login" className="inline-flex items-center gap-2 rounded-[12px] border border-white/50 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20">
+                  Login Now
                 </Link>
               </div>
             </div>
@@ -205,8 +205,8 @@ function HomePage() {
             <Link to="/auth/login" className="inline-flex items-center gap-2 rounded-[12px] bg-white px-5 py-3 text-sm font-semibold text-cyan-800">
               Get Started <FaArrowRight />
             </Link>
-            <Link to="/auth/register" className="inline-flex items-center gap-2 rounded-[12px] border border-white/40 bg-white/10 px-5 py-3 text-sm font-semibold text-white">
-              Create Team Account
+            <Link to="/auth/login" className="inline-flex items-center gap-2 rounded-[12px] border border-white/40 bg-white/10 px-5 py-3 text-sm font-semibold text-white">
+              Open Portal
             </Link>
           </div>
         </section>

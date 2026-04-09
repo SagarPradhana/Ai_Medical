@@ -28,9 +28,9 @@ function PatientLoginPage() {
     <AuthShell
       title="Patient Login"
       subtitle="Track appointments, records, and AI diagnosis guidance."
-      footerText="New patient?"
-      footerLink="Register now"
-      footerTo="/auth/register"
+      footerText="Use unified login?"
+      footerLink="Open login"
+      footerTo="/auth/login"
     >
       <form onSubmit={onSubmit} className="auth-form">
         <label>

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import {
   FaCalendarCheck,
@@ -7,11 +8,13 @@ import {
   FaGaugeHigh,
   FaVideo,
   FaLock,
+  FaHospital,
   FaStethoscope,
   FaUserDoctor,
   FaUsers
 } from "react-icons/fa6";
-import { adminOnlyNavItems, baseNavItems, doctorOnlyNavItems } from "../../data/navigation";
+import { navByRole } from "../../data/navigation";
+import { apiFetch } from "../../utils/api";
 
 const iconByKey = {
   dashboard: FaGaugeHigh,
@@ -22,17 +25,25 @@ const iconByKey = {
   reports: FaChartLine,
   doctors: FaUserDoctor,
   patients: FaUsers,
-  rbac: FaLock
+  rbac: FaLock,
+  departments: FaHospital
 };
 
 function Sidebar({ role, isOpen, isCollapsed, onClose }) {
-  const core = [...baseNavItems.slice(0, 3), ...baseNavItems.slice(3)];
-  const withDoctorModules =
-    role === "doctor" || role === "admin"
-      ? [...core.slice(0, 3), ...doctorOnlyNavItems, ...core.slice(3)]
-      : core;
-  const navItems =
-    role === "admin" ? [...withDoctorModules, ...adminOnlyNavItems] : withDoctorModules;
+  const [departments, setDepartments] = useState([]);
+  const navItems = navByRole[role] || navByRole.patient;
+
+  useEffect(() => {
+    const loadDepartments = async () => {
+      try {
+        const data = await apiFetch("/departments");
+        setDepartments(data.data || []);
+      } catch (_error) {
+        setDepartments([]);
+      }
+    };
+    loadDepartments();
+  }, []);
 
   return (
     <aside className={`sidebar ${isOpen ? "open" : ""} ${isCollapsed ? "collapsed" : ""}`}>
@@ -63,6 +74,27 @@ function Sidebar({ role, isOpen, isCollapsed, onClose }) {
           );
         })}
       </nav>
+
+      {!isCollapsed && departments.length > 0 ? (
+        <div className="sidebar-subsection">
+          <p className="sidebar-subtitle">Department</p>
+          <nav className="sidebar-nav">
+            {departments.map((name) => (
+              <NavLink
+                key={name}
+                to={`/app/departments?name=${encodeURIComponent(name)}`}
+                onClick={onClose}
+                className="sidebar-link"
+              >
+                <span className="sidebar-link-icon">
+                  <FaHospital />
+                </span>
+                <span>{name}</span>
+              </NavLink>
+            ))}
+          </nav>
+        </div>
+      ) : null}
     </aside>
   );
 }
