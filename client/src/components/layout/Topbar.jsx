@@ -5,13 +5,15 @@ import {
   FaBell,
   FaCircleUser,
   FaKey,
+  FaMoon,
   FaRightFromBracket,
   FaShield,
+  FaSun,
   FaUser
 } from "react-icons/fa6";
 import { useNotifications } from "../../context/NotificationContext";
 
-function Topbar({ onToggleSidebar, onToggleCollapse, user }) {
+function Topbar({ onToggleSidebar, onToggleCollapse, user, onToggleTheme, isDark }) {
   const [openAccountModal, setOpenAccountModal] = useState(false);
   const location = useLocation();
   const { unreadCount, openModal } = useNotifications();
@@ -43,6 +45,18 @@ function Topbar({ onToggleSidebar, onToggleCollapse, user }) {
       </div>
 
       <div className="topbar-actions">
+        <button
+          type="button"
+          className="notif-icon-btn theme-toggle-btn"
+          onClick={onToggleTheme}
+          aria-label={`Switch to ${isDark ? "light" : "dark"} theme`}
+          title={`Switch to ${isDark ? "light" : "dark"} theme`}
+        >
+          <span className="notif-icon">
+            {isDark ? <FaSun /> : <FaMoon />}
+          </span>
+        </button>
+
         <button type="button" className="notif-icon-btn" onClick={openModal} aria-label="Open notifications">
           <span className="notif-icon">
             <FaBell />

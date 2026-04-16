@@ -1,5 +1,6 @@
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") || "/api";
+const API_BASE = import.meta.env.DEV
+  ? "/api"
+  : (import.meta.env.VITE_API_BASE_URL?.trim().replace(/\/$/, "") || "/api");
 
 function getStoredToken() {
   try {

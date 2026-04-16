@@ -16,6 +16,24 @@
   --shadow: 0 14px 36px rgba(18, 52, 77, 0.12);
 }
 
+:root[data-theme="dark"] {
+  --bg: #07131c;
+  --bg-2: #0d1d2a;
+  --surface: #0f1f2d;
+  --surface-soft: #132737;
+  --ink: #e8f3fb;
+  --muted: #96aec0;
+  --border: #254154;
+  --nav: #081827;
+  --nav-2: #0c2538;
+  --accent: #18a788;
+  --accent-2: #f39a45;
+  --danger: #ef6d5d;
+  --warn: #e4ac4a;
+  --good: #32c495;
+  --shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -29,6 +47,7 @@ body {
     radial-gradient(circle at 88% 18%, #d6f0df 0%, transparent 32%),
     linear-gradient(155deg, var(--bg), var(--bg-2));
   min-height: 100vh;
+  transition: background 0.25s ease, color 0.25s ease;
 }
 
 a {
@@ -51,6 +70,89 @@ a {
   padding: 26px;
   box-shadow: var(--shadow);
   animation: rise-in 0.55s ease both;
+}
+
+.portal-loader-wrap {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.portal-loader-card {
+  width: min(420px, 100%);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 28px 24px;
+  background: linear-gradient(160deg, var(--surface), var(--surface-soft));
+  box-shadow: var(--shadow);
+  text-align: center;
+  animation: rise-in 0.45s ease both;
+}
+
+.portal-loader-card h2 {
+  margin: 18px 0 6px;
+  font-size: 1.4rem;
+}
+
+.portal-loader-card p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.portal-loader-mark {
+  position: relative;
+  width: 92px;
+  height: 92px;
+  margin: 0 auto;
+  display: grid;
+  place-items: center;
+}
+
+.portal-loader-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 4px solid rgba(33, 139, 187, 0.18);
+  border-top-color: var(--accent);
+  border-right-color: #45b5df;
+  animation: portal-spin 1.1s linear infinite;
+}
+
+.portal-loader-core {
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #efffff;
+  background: linear-gradient(135deg, var(--accent), #1697c2);
+  box-shadow: 0 10px 24px rgba(15, 124, 156, 0.24);
+}
+
+.portal-loader-bars {
+  margin-top: 18px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.portal-loader-bars span {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent), #57c0db);
+  animation: portal-pulse 1s ease-in-out infinite;
+}
+
+.portal-loader-bars span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.portal-loader-bars span:nth-child(3) {
+  animation-delay: 0.3s;
 }
 
 .auth-head h1 {
@@ -249,7 +351,7 @@ a {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: rgba(255, 255, 255, 0.9);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
   backdrop-filter: blur(6px);
   border-bottom: 1px solid var(--border);
   padding: 12px 18px;
@@ -284,37 +386,41 @@ a {
 
 .menu-btn {
   display: none;
-  border: 1px solid #9cc2dd;
+  border: 1px solid var(--border);
   border-radius: 9px;
   padding: 8px 10px;
   background: var(--surface);
   cursor: pointer;
-  color: #1d4f70;
+  color: var(--ink);
 }
 
 .collapse-btn {
-  border: 1px solid #9cc2dd;
+  border: 1px solid var(--border);
   border-radius: 10px;
   width: 38px;
   height: 38px;
-  background: #f3faff;
+  background: var(--surface-soft);
   cursor: pointer;
-  color: #1d4f70;
+  color: var(--ink);
   display: inline-grid;
   place-items: center;
 }
 
 .notif-icon-btn {
   position: relative;
-  border: 1px solid #b7d2e6;
+  border: 1px solid var(--border);
   border-radius: 12px;
   width: 42px;
   height: 42px;
   display: inline-grid;
   place-items: center;
-  background: #f0f8ff;
-  color: #2a6288;
+  background: var(--surface-soft);
+  color: var(--ink);
   cursor: pointer;
+}
+
+.theme-toggle-btn {
+  overflow: hidden;
 }
 
 .notif-icon {
@@ -373,7 +479,7 @@ a {
   align-items: center;
   gap: 10px;
   padding: 14px;
-  border-bottom: 1px solid #e6eef5;
+  border-bottom: 1px solid var(--border);
 }
 
 .topbar-account-head h3 {
@@ -419,18 +525,18 @@ a {
 }
 
 .topbar-account-links a {
-  border: 1px solid #d6e4ef;
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 10px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: #1c4f6d;
-  background: #f7fbff;
+  color: var(--ink);
+  background: var(--surface-soft);
 }
 
 .topbar-account-links a:hover {
-  background: #eef8ff;
+  background: color-mix(in srgb, var(--surface-soft) 82%, #8cdcff 18%);
 }
 
 .profile-chip {
@@ -775,18 +881,18 @@ table th,
 table td {
   text-align: left;
   padding: 10px 8px;
-  border-bottom: 1px solid #e5eef6;
+  border-bottom: 1px solid var(--border);
   font-size: 0.9rem;
 }
 
 table th {
-  color: #2f5169;
+  color: var(--ink);
   font-weight: 700;
-  background: #f4f9ff;
+  background: var(--surface-soft);
 }
 
 table tbody tr:hover {
-  background: #f8fcff;
+  background: color-mix(in srgb, var(--surface-soft) 85%, transparent);
 }
 
 .status-pill {
@@ -927,7 +1033,7 @@ table tbody tr:hover {
 }
 
 .toggle-list li {
-  border: 1px solid #dae7f1;
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 10px;
   display: flex;
@@ -937,13 +1043,13 @@ table tbody tr:hover {
 }
 
 .toggle-btn {
-  border: 1px solid #a9c7dd;
-  background: #f3faff;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
   border-radius: 999px;
   padding: 6px 10px;
   font-size: 0.78rem;
   font-weight: 700;
-  color: #32627f;
+  color: var(--ink);
 }
 
 .toggle-btn.active {
@@ -973,18 +1079,18 @@ table tbody tr:hover {
 }
 
 .calendar-cell {
-  border: 1px solid #d8e6f2;
+  border: 1px solid var(--border);
   border-radius: 10px;
   min-height: 76px;
   padding: 8px;
   display: grid;
   align-content: space-between;
-  background: #fcfeff;
+  background: color-mix(in srgb, var(--surface) 88%, var(--surface-soft) 12%);
 }
 
 .calendar-cell span {
   font-weight: 700;
-  color: #30566f;
+  color: var(--ink);
 }
 
 .calendar-cell small {
@@ -993,8 +1099,8 @@ table tbody tr:hover {
 }
 
 .calendar-cell.booked {
-  border-color: #8bc5df;
-  background: #eff8ff;
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: color-mix(in srgb, var(--surface-soft) 70%, #50cfff 30%);
 }
 
 .notif-modal-wrap {
@@ -1126,10 +1232,10 @@ table tbody tr:hover {
   grid-template-columns: auto 1fr auto;
   gap: 10px;
   align-items: start;
-  border: 1px solid #c9ddeb;
+  border: 1px solid var(--border);
   border-left-width: 4px;
   border-radius: 12px;
-  background: #ffffff;
+  background: var(--surface);
   box-shadow: var(--shadow);
   padding: 10px;
   animation: rise-in 0.2s ease both;
@@ -1239,7 +1345,7 @@ table tbody tr:hover {
 .chat-wrap {
   border: 1px solid var(--border);
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.9);
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
   box-shadow: var(--shadow);
   overflow: hidden;
 }
@@ -1417,6 +1523,24 @@ table tbody tr:hover {
 @keyframes grow {
   from {
     width: 0;
+  }
+}
+
+@keyframes portal-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes portal-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0) scale(0.88);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-3px) scale(1);
   }
 }
 

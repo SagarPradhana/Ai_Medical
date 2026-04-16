@@ -6,6 +6,10 @@ import RoleProtectedRoute from "./routes/RoleProtectedRoute";
 import PortalLayout from "./components/layout/PortalLayout";
 import LoginChoicePage from "./pages/auth/LoginChoicePage";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
+import RegisterPage from "./pages/auth/RegisterPage";
+import AdminLoginPage from "./pages/auth/AdminLoginPage";
+import DoctorLoginPage from "./pages/auth/DoctorLoginPage";
+import PatientLoginPage from "./pages/auth/PatientLoginPage";
 import HomePage from "./pages/HomePage";
 import DashboardPage from "./pages/app/DashboardPage";
 import DiagnosisChatPage from "./pages/app/DiagnosisChatPage";
@@ -31,11 +35,11 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/auth/login" element={<LoginChoicePage />} />
-          <Route path="/auth/login/admin" element={<Navigate to="/auth/login" replace />} />
-          <Route path="/auth/login/doctor" element={<Navigate to="/auth/login" replace />} />
-          <Route path="/auth/login/patient" element={<Navigate to="/auth/login" replace />} />
+          <Route path="/auth/login/admin" element={<AdminLoginPage />} />
+          <Route path="/auth/login/doctor" element={<DoctorLoginPage />} />
+          <Route path="/auth/login/patient" element={<PatientLoginPage />} />
           <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/auth/register" element={<Navigate to="/auth/login" replace />} />
+          <Route path="/auth/register" element={<RegisterPage />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
           <Route

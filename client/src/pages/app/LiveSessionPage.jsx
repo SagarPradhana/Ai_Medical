@@ -5,6 +5,7 @@ import {
   FaMicrophone,
   FaPaperPlane,
   FaPhoneSlash,
+  FaTrash,
   FaVideo,
   FaVideoSlash
 } from "react-icons/fa6";
@@ -30,6 +31,7 @@ function LiveSessionPage() {
   const [cameraOn, setCameraOn] = useState(true);
   const [micOn, setMicOn] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [appointmentId, setAppointmentId] = useState("");
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
@@ -46,6 +48,7 @@ function LiveSessionPage() {
 
   const canCreate = canPerform(user?.role, "session", "create");
   const canUpdate = canPerform(user?.role, "session", "update");
+  const canDelete = canPerform(user?.role, "session", "delete");
 
   const loadData = async () => {
     try {
@@ -295,6 +298,15 @@ function LiveSessionPage() {
       return;
     }
 
+    if (payload.type === "session.deleted") {
+      setSessions((prev) => prev.filter((session) => session.id !== payload.sessionId));
+      if (selectedSessionRef.current?.id === payload.sessionId) {
+        closeRealtime();
+        setSelectedId(null);
+      }
+      return;
+    }
+
     if (payload.type === "signal") {
       await handleSignal(payload);
     }
@@ -428,6 +440,25 @@ function LiveSessionPage() {
     }
   };
 
+  const removeSession = async () => {
+    if (!deleteTarget) return;
+    try {
+      setError("");
+      setInfo("");
+      await apiFetch(`/live-sessions/${deleteTarget.id}`, { method: "DELETE" });
+      if (selectedSession?.id === deleteTarget.id) {
+        closeRealtime();
+      }
+      setDeleteTarget(null);
+      setInfo("Session deleted successfully.");
+      await loadData();
+      notifySuccess("Live session deleted successfully.", "Live session");
+    } catch (submitError) {
+      setError(submitError.message);
+      notifyError(submitError.message, "Delete session failed");
+    }
+  };
+
   return (
     <section className="space-y-4">
       <PageHeader
@@ -459,18 +490,33 @@ function LiveSessionPage() {
 
           <div className="space-y-2">
             {sessions.map((item) => (
-              <button
+              <div
                 key={item.id}
-                type="button"
-                onClick={() => setSelectedId(item.id)}
-                className={`w-full rounded-[12px] border p-3 text-left transition ${selectedId === item.id ? "border-cyan-300 bg-cyan-50" : "border-slate-200 bg-slate-50 hover:bg-slate-100"}`}
+                className={`rounded-[12px] border p-3 transition ${selectedId === item.id ? "border-cyan-300 bg-cyan-50" : "border-slate-200 bg-slate-50 hover:bg-slate-100"}`}
               >
-                <p className="text-sm font-semibold text-slate-800">{item.patientName} • {item.doctorName}</p>
-                <p className="text-xs text-slate-500">Room: {item.roomCode}</p>
-                <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${item.status === "Active" ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600"}`}>
-                  {item.status}
-                </span>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedId(item.id)}
+                  className="w-full text-left"
+                >
+                  <p className="text-sm font-semibold text-slate-800">{item.patientName} • {item.doctorName}</p>
+                  <p className="text-xs text-slate-500">Room: {item.roomCode}</p>
+                  <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${item.status === "Active" ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600"}`}>
+                    {item.status}
+                  </span>
+                </button>
+                {canDelete ? (
+                  <div className="mt-3 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setDeleteTarget(item)}
+                      className="inline-flex items-center gap-1 rounded-[10px] border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-[11px] font-semibold text-rose-700 transition hover:bg-rose-100"
+                    >
+                      <FaTrash /> Delete
+                    </button>
+                  </div>
+                ) : null}
+              </div>
             ))}
             {sessions.length === 0 ? <p className="text-sm text-slate-500">No sessions yet.</p> : null}
           </div>
@@ -514,6 +560,15 @@ function LiveSessionPage() {
                   className="inline-flex items-center gap-1 rounded-[10px] border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700"
                 >
                   <FaPhoneSlash /> End Session
+                </button>
+              ) : null}
+              {canDelete && selectedSession ? (
+                <button
+                  type="button"
+                  onClick={() => setDeleteTarget(selectedSession)}
+                  className="inline-flex items-center gap-1 rounded-[10px] border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700"
+                >
+                  <FaTrash /> Delete Session
                 </button>
               ) : null}
             </div>
@@ -590,6 +645,37 @@ function LiveSessionPage() {
             <FaVideo /> Start Session
           </button>
         </form>
+      </FuturisticModal>
+
+      <FuturisticModal
+        open={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        title="Delete Live Session"
+        subtitle="This action permanently removes the selected session."
+        icon={FaTrash}
+        size="sm"
+        footer={
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setDeleteTarget(null)}
+              className="rounded-[12px] border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={removeSession}
+              className="rounded-[12px] bg-rose-600 px-4 py-2 text-sm font-semibold text-white"
+            >
+              Delete
+            </button>
+          </div>
+        }
+      >
+        <p className="text-sm text-slate-600">
+          Delete live session <strong>{deleteTarget?.roomCode || deleteTarget?.id}</strong>?
+        </p>
       </FuturisticModal>
     </section>
   );

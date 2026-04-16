@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom";
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { useTheme } from "../../context/ThemeContext";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 import NotificationModal from "./NotificationModal";
@@ -10,9 +11,10 @@ function PortalLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const { user } = useAuth();
+  const { theme, toggleTheme, isDark } = useTheme();
 
   return (
-    <div className={`portal-shell ${isSidebarCollapsed ? "collapsed" : ""}`}>
+    <div className={`portal-shell ${isSidebarCollapsed ? "collapsed" : ""}`} data-theme={theme}>
       <Sidebar
         role={user?.role}
         isOpen={sidebarOpen}
@@ -33,6 +35,8 @@ function PortalLayout() {
           onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
           isSidebarCollapsed={isSidebarCollapsed}
           user={user}
+          onToggleTheme={toggleTheme}
+          isDark={isDark}
         />
         <main className="portal-main">
           <Outlet />

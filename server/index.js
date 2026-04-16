@@ -95,7 +95,7 @@ const SYSTEM_PERMISSION_TEMPLATE = {
     doctor: ["read", "update"],
     patient: ["create", "read", "update"],
     appointment: ["create", "read", "update"],
-    session: ["create", "read", "update"],
+    session: ["create", "read", "update", "delete"],
     record: ["create", "read", "update"],
     department: ["read"]
   },
@@ -103,7 +103,7 @@ const SYSTEM_PERMISSION_TEMPLATE = {
     doctor: ["read"],
     patient: ["read", "update"],
     appointment: ["create", "read", "update", "delete"],
-    session: ["create", "read", "update"],
+    session: ["create", "read", "update", "delete"],
     record: ["read"],
     department: ["read"]
   }
@@ -1572,6 +1572,23 @@ app.put("/api/live-sessions/:id", authenticateToken, requirePermission("session"
   persistDb();
   broadcastToSession(liveSessions[idx].id, { type: "session.updated", session: liveSessions[idx] });
   return res.json({ data: liveSessions[idx] });
+});
+
+app.delete("/api/live-sessions/:id", authenticateToken, requirePermission("session", "delete"), (req, res) => {
+  const { id } = req.params;
+  const idx = liveSessions.findIndex((item) => item.id === id);
+  if (idx === -1) {
+    return res.status(404).json({ error: "Session not found" });
+  }
+  if (!canAccessSession(req.auth, liveSessions[idx])) {
+    return res.status(403).json({ error: "Not allowed for this session" });
+  }
+
+  const removed = liveSessions.splice(idx, 1)[0];
+  liveSessionSockets.delete(id);
+  persistDb();
+  broadcastToSession(id, { type: "session.deleted", sessionId: id });
+  return res.json({ data: removed });
 });
 
 app.post("/api/live-sessions/:id/messages", authenticateToken, requirePermission("session", "update"), (req, res) => {

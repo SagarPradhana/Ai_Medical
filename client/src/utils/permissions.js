@@ -12,7 +12,7 @@ export const rolePermissions = {
     doctor: ["read", "update"],
     patient: ["create", "read", "update"],
     appointment: ["create", "read", "update"],
-    session: ["create", "read", "update"],
+    session: ["create", "read", "update", "delete"],
     record: ["create", "read", "update"],
     department: ["read"]
   },
@@ -20,7 +20,7 @@ export const rolePermissions = {
     doctor: ["read"],
     patient: ["read", "update"],
     appointment: ["create", "read", "update", "delete"],
-    session: ["create", "read", "update"],
+    session: ["create", "read", "update", "delete"],
     record: ["read"],
     department: ["read"]
   }

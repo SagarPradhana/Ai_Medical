@@ -52,6 +52,39 @@ function StatCard({ title, value, icon: Icon }) {
   );
 }
 
+function AppointmentActionButtons({ item, canUpdate, canDelete, onEdit, onDelete, compact = false }) {
+  if (!canUpdate && !canDelete) {
+    return null;
+  }
+
+  const baseClass = compact
+    ? "inline-flex items-center gap-1 rounded-[10px] px-2.5 py-1.5 text-[11px] font-semibold"
+    : "inline-flex items-center gap-1 rounded-[12px] px-3 py-2 text-xs font-semibold";
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {canUpdate ? (
+        <button
+          type="button"
+          onClick={() => onEdit(item)}
+          className={`${baseClass} border border-sky-200 bg-sky-50 text-sky-700 transition hover:bg-sky-100`}
+        >
+          <FaPenToSquare /> Edit
+        </button>
+      ) : null}
+      {canDelete ? (
+        <button
+          type="button"
+          onClick={() => onDelete(item)}
+          className={`${baseClass} border border-rose-200 bg-rose-50 text-rose-700 transition hover:bg-rose-100`}
+        >
+          <FaTrash /> Delete
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 function AppointmentsPage() {
   const { user } = useAuth();
   const [view, setView] = useState("grid");
@@ -207,7 +240,10 @@ function AppointmentsPage() {
       sortedAppointments.reduce((acc, item) => {
         const day = Number(String(item.date).split("-")[2]);
         if (day >= 1 && day <= 30) {
-          acc[day] = item.id;
+          if (!acc[day]) {
+            acc[day] = [];
+          }
+          acc[day].push(item);
         }
         return acc;
       }, {}),
@@ -311,25 +347,14 @@ function AppointmentsPage() {
               </div>
 
               {(canUpdate || canDelete) ? (
-                <div className="mt-3 flex items-center gap-2">
-                  {canUpdate ? (
-                    <button
-                      type="button"
-                      onClick={() => startEdit(row)}
-                      className="inline-flex items-center gap-1 rounded-[12px] border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
-                    >
-                      <FaPenToSquare /> Edit
-                    </button>
-                  ) : null}
-                  {canDelete ? (
-                    <button
-                      type="button"
-                      onClick={() => setDeleteTarget(row)}
-                      className="inline-flex items-center gap-1 rounded-[12px] border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-100"
-                    >
-                      <FaTrash /> Delete
-                    </button>
-                  ) : null}
+                <div className="mt-3">
+                  <AppointmentActionButtons
+                    item={row}
+                    canUpdate={canUpdate}
+                    canDelete={canDelete}
+                    onEdit={startEdit}
+                    onDelete={setDeleteTarget}
+                  />
                 </div>
               ) : null}
             </article>
@@ -350,6 +375,7 @@ function AppointmentsPage() {
                     <th>Doctor</th>
                     <th>Date</th>
                     <th>Status</th>
+                    {(canUpdate || canDelete) ? <th>Actions</th> : null}
                   </tr>
                 </thead>
                 <tbody>
@@ -360,6 +386,18 @@ function AppointmentsPage() {
                       <td>{row.doctorName}</td>
                       <td>{row.date} {row.time}</td>
                       <td><StatusBadge status={row.status} /></td>
+                      {(canUpdate || canDelete) ? (
+                        <td className="table-actions-cell">
+                          <AppointmentActionButtons
+                            item={row}
+                            canUpdate={canUpdate}
+                            canDelete={canDelete}
+                            onEdit={startEdit}
+                            onDelete={setDeleteTarget}
+                            compact
+                          />
+                        </td>
+                      ) : null}
                     </tr>
                   ))}
                 </tbody>
@@ -378,6 +416,7 @@ function AppointmentsPage() {
                     <th>Doctor</th>
                     <th>Date</th>
                     <th>Status</th>
+                    {(canUpdate || canDelete) ? <th>Actions</th> : null}
                   </tr>
                 </thead>
                 <tbody>
@@ -388,6 +427,18 @@ function AppointmentsPage() {
                       <td>{row.doctorName}</td>
                       <td>{row.date} {row.time}</td>
                       <td><StatusBadge status={row.status} /></td>
+                      {(canUpdate || canDelete) ? (
+                        <td className="table-actions-cell">
+                          <AppointmentActionButtons
+                            item={row}
+                            canUpdate={canUpdate}
+                            canDelete={canDelete}
+                            onEdit={startEdit}
+                            onDelete={setDeleteTarget}
+                            compact
+                          />
+                        </td>
+                      ) : null}
                     </tr>
                   ))}
                 </tbody>
@@ -401,12 +452,41 @@ function AppointmentsPage() {
         <div className="rounded-[12px] border border-slate-200 bg-white p-4 shadow-soft">
           <h3 className="mb-3 text-base font-semibold text-slate-800">Monthly Schedule (1-30)</h3>
           <div className="calendar-grid">
-            {calendarDays.map((day) => (
-              <article key={day} className={`calendar-cell ${appointmentMap[day] ? "booked" : ""}`}>
-                <span>{day}</span>
-                {appointmentMap[day] ? <small>{appointmentMap[day]}</small> : null}
-              </article>
-            ))}
+            {calendarDays.map((day) => {
+              const dayAppointments = appointmentMap[day] || [];
+              return (
+                <article key={day} className={`calendar-cell ${dayAppointments.length ? "booked" : ""}`}>
+                  <span>{day}</span>
+                  {dayAppointments.length ? (
+                    <div className="mt-2 space-y-2">
+                      {dayAppointments.slice(0, 2).map((item) => (
+                        <div key={item.id} className="rounded-[10px] border border-slate-200 bg-white p-2 text-left shadow-sm">
+                          <p className="text-[11px] font-semibold text-slate-800">{item.id}</p>
+                          <p className="text-[11px] text-slate-500">{item.time} • {item.doctorName}</p>
+                          {(canUpdate || canDelete) ? (
+                            <div className="mt-2">
+                              <AppointmentActionButtons
+                                item={item}
+                                canUpdate={canUpdate}
+                                canDelete={canDelete}
+                                onEdit={startEdit}
+                                onDelete={setDeleteTarget}
+                                compact
+                              />
+                            </div>
+                          ) : null}
+                        </div>
+                      ))}
+                      {dayAppointments.length > 2 ? (
+                        <small className="text-[11px] font-semibold text-slate-500">
+                          +{dayAppointments.length - 2} more
+                        </small>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </article>
+              );
+            })}
           </div>
         </div>
       ) : null}
