@@ -20,6 +20,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationContext";
 import { apiFetch } from "../../utils/api";
 import { canPerform } from "../../utils/permissions";
+import PortalLoader from "../../components/common/PortalLoader";
 
 function StatusBadge({ status }) {
   const cls =
@@ -64,6 +65,7 @@ function DoctorsPage() {
   const [departmentOptions, setDepartmentOptions] = useState([]);
   const [sortBy, setSortBy] = useState("name_asc");
   const [page, setPage] = useState(1);
+  const [showLoading, setShowLoading] = useState(false);
   const pageSize = 6;
 
   const [form, setForm] = useState({
@@ -81,6 +83,7 @@ function DoctorsPage() {
   const canDelete = canPerform(user?.role, "doctor", "delete");
 
   const loadDoctors = async () => {
+    setShowLoading(true);
     try {
       setError("");
       const [doctorRes, departmentRes] = await Promise.all([apiFetch("/doctors"), apiFetch("/departments")]);
@@ -89,7 +92,9 @@ function DoctorsPage() {
     } catch (fetchError) {
       setError(fetchError.message);
       notifyError(fetchError.message, "Doctors load failed");
-    }
+    } finally {
+      setShowLoading(false);
+      }
   };
 
   useEffect(() => {
@@ -134,6 +139,7 @@ function DoctorsPage() {
 
   const submitForm = async (event) => {
     event.preventDefault();
+    setShowLoading(true);
     try {
       setError("");
       const payload = {
@@ -160,11 +166,14 @@ function DoctorsPage() {
     } catch (submitError) {
       setError(submitError.message);
       notifyError(submitError.message, "Doctor save failed");
+    } finally {
+      setShowLoading(false);
     }
   };
 
   const removeDoctor = async () => {
     if (!deleteTarget) return;
+    setShowLoading(true);
     try {
       setError("");
       await apiFetch(`/doctors/${deleteTarget.id}`, { method: "DELETE" });
@@ -174,6 +183,8 @@ function DoctorsPage() {
     } catch (removeError) {
       setError(removeError.message);
       notifyError(removeError.message, "Doctor delete failed");
+    } finally {
+      setShowLoading(false);
     }
   };
 
@@ -235,6 +246,12 @@ function DoctorsPage() {
         title="Doctors Management"
         subtitle="Specialist capacity, availability, and profile administration."
       />
+
+      {showLoading ? (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-md">
+          <PortalLoader title="Loading Doctors" subtitle="Loading doctors data..." />
+        </div>
+      ) : null}
 
       {error ? <p className="rounded-[12px] border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">{error}</p> : null}
 

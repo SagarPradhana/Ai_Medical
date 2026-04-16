@@ -24,6 +24,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationContext";
 import { apiFetch } from "../../utils/api";
 import { canPerform } from "../../utils/permissions";
+import PortalLoader from "../../components/common/PortalLoader";
 
 const riskOrder = { High: 3, Medium: 2, Low: 1 };
 
@@ -73,6 +74,7 @@ function PatientsPage() {
   const [departmentOptions, setDepartmentOptions] = useState([]);
   const [sortBy, setSortBy] = useState("name_asc");
   const [page, setPage] = useState(1);
+  const [showLoading, setShowLoading] = useState(false);
   const pageSize = 6;
 
   const [form, setForm] = useState({
@@ -93,6 +95,7 @@ function PatientsPage() {
   const canDelete = canPerform(user?.role, "patient", "delete");
 
   const loadPatients = async () => {
+    setShowLoading(true);
     try {
       setError("");
       const [patientRes, departmentRes] = await Promise.all([apiFetch("/patients"), apiFetch("/departments")]);
@@ -101,6 +104,8 @@ function PatientsPage() {
     } catch (fetchError) {
       setError(fetchError.message);
       notifyError(fetchError.message, "Patients load failed");
+    } finally {
+      setShowLoading(false);
     }
   };
 
@@ -173,6 +178,7 @@ Generated At: ${new Date().toISOString()}
 
   const submitForm = async (event) => {
     event.preventDefault();
+    setShowLoading(true);
     try {
       setError("");
       const payload = { ...form };
@@ -196,6 +202,8 @@ Generated At: ${new Date().toISOString()}
     } catch (submitError) {
       setError(submitError.message);
       notifyError(submitError.message, "Patient save failed");
+    } finally {
+      setShowLoading(false);
     }
   };
 
@@ -500,6 +508,12 @@ Generated At: ${new Date().toISOString()}
         pageSize={pageSize}
         onPageChange={setPage}
       />
+
+      {showLoading ? (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-md">
+          <PortalLoader title="Loading Patients" subtitle="Loading patients data..." />
+        </div>
+      ) : null}
 
       <FuturisticModal
         open={modalOpen}

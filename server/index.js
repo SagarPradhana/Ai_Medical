@@ -895,7 +895,7 @@ app.post("/api/auth/login", async (req, res) => {
 
   const normalizedEmail = email.toLowerCase().trim();
   const user = users.find((candidate) => candidate.email === normalizedEmail);
-
+  
   if (!user) {
     return res.status(401).json({ error: "Invalid credentials" });
   }
@@ -907,6 +907,7 @@ app.post("/api/auth/login", async (req, res) => {
   }
 
   const validPassword = await bcrypt.compare(password, user.passwordHash);
+  console.log("MATCH RESULT:", validPassword);
   if (!validPassword) {
     return res.status(401).json({ error: "Invalid credentials" });
   }

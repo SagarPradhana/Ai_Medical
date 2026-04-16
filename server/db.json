@@ -8,8 +8,7 @@
       "experience": 3,
       "status": "On Duty",
       "email": "rudra@gmail.com",
-      "phone": "",
-      "_id": "69e0bc00906b68a44d6ed2a5"
+      "phone": ""
     }
   ],
   "patients": [
@@ -23,8 +22,19 @@
       "nextVisit": "",
       "email": "ashish@gmail.com",
       "condition": "Not Assigned",
-      "department": "Dentist",
-      "_id": "69e0bc00906b68a44d6ed2a4"
+      "department": "Dentist"
+    },
+    {
+      "id": "pat-1776339110888-1198",
+      "name": "Sumitra",
+      "age": 23,
+      "gender": "Female",
+      "risk": "Low",
+      "status": "New",
+      "nextVisit": "",
+      "email": "sumitra@gmail.com",
+      "condition": "Not Assigned",
+      "department": "Dentist"
     }
   ],
   "appointments": [
@@ -37,8 +47,7 @@
       "date": "2026-04-09",
       "time": "14:48",
       "mode": "Video",
-      "status": "Pending",
-      "_id": "69e0bc00906b68a44d6ed2a6"
+      "status": "Pending"
     },
     {
       "id": "apt-1776334742561-2319",
@@ -49,8 +58,7 @@
       "date": "2026-04-17",
       "time": "10:30",
       "mode": "In-person",
-      "status": "Pending",
-      "_id": "69e0bc00906b68a44d6ed2a7"
+      "status": "Pending"
     },
     {
       "id": "apt-1776334871061-9303",
@@ -61,8 +69,7 @@
       "date": "2026-04-17",
       "time": "10:30",
       "mode": "In-person",
-      "status": "Pending",
-      "_id": "69e0bc00906b68a44d6ed2a8"
+      "status": "Pending"
     },
     {
       "id": "apt-1776335018003-4789",
@@ -73,8 +80,7 @@
       "date": "2026-04-17",
       "time": "10:30",
       "mode": "In-person",
-      "status": "Pending",
-      "_id": "69e0bc00906b68a44d6ed2a9"
+      "status": "Pending"
     },
     {
       "id": "apt-1776335180440-9484",
@@ -85,8 +91,7 @@
       "date": "2026-04-17",
       "time": "10:30",
       "mode": "In-person",
-      "status": "Pending",
-      "_id": "69e0bc00906b68a44d6ed2aa"
+      "status": "Pending"
     },
     {
       "id": "apt-1776335305864-989",
@@ -97,8 +102,7 @@
       "date": "2026-04-17",
       "time": "10:30",
       "mode": "In-person",
-      "status": "Pending",
-      "_id": "69e0bc00906b68a44d6ed2ab"
+      "status": "Pending"
     }
   ],
   "liveSessions": [],
@@ -109,11 +113,10 @@
       "name": "Sagar Pradhan",
       "email": "sagarpradhan553@gmail.com",
       "role": "admin",
-      "passwordHash": "$2a$10$OmtNuG/typ.ZkJS6uGfv../fB2nQOSVAJl94DJp/GeKMiwCybXpXe",
+      "passwordHash": "$2a$10$yRvdfq47ukSqGsCPoluIY.0BxDZe0ZNqkqHpr1WT7W2exQDwHbAgi",
       "doctorRef": null,
       "patientRef": null,
-      "position": "admin",
-      "_id": "69e0bc01906b68a44d6ed2c3"
+      "position": "admin"
     },
     {
       "id": "u-1775717228308-2117",
@@ -123,8 +126,7 @@
       "position": "doctor",
       "passwordHash": "$2a$10$gdNEc12jVplwoPvja7tIruF9Rj98X5XeJWawhqkZslxwDpLUVK69.",
       "doctorRef": "doc-1775717228308-9421",
-      "patientRef": null,
-      "_id": "69e0bc01906b68a44d6ed2c4"
+      "patientRef": null
     },
     {
       "id": "u-1775725977560-7770",
@@ -134,15 +136,23 @@
       "position": "patient",
       "passwordHash": "$2a$10$Rhp7Ty.G5JLelDVgZH//LOE8ai/IVTERXfE5L8qX2njOSg3p3ZA6q",
       "doctorRef": null,
-      "patientRef": "pat-1775725977560-3722",
-      "_id": "69e0bc01906b68a44d6ed2c5"
+      "patientRef": "pat-1775725977560-3722"
+    },
+    {
+      "id": "u-1776339110888-7644",
+      "name": "Sumitra",
+      "email": "sumitra@gmail.com",
+      "role": "patient",
+      "position": "patient",
+      "passwordHash": "$2a$10$mOhZMKqmSdTQsCILUf.BjueKy7NmC1ViYbySd2maTEvEMB3uwnYma",
+      "doctorRef": null,
+      "patientRef": "pat-1776339110888-1198"
     }
   ],
   "departments": [
     {
       "id": "dept-1775713100249-3229",
-      "name": "Dentist",
-      "_id": "69e0bc01906b68a44d6ed2ac"
+      "name": "Dentist"
     }
   ],
   "roles": [
@@ -150,27 +160,24 @@
       "id": "role-admin",
       "name": "admin",
       "description": "Platform administrator",
-      "isSystem": true,
-      "_id": "69e0bc01906b68a44d6ed2ad"
+      "isSystem": true
     },
     {
       "id": "role-doctor",
       "name": "doctor",
       "description": "Clinical provider",
-      "isSystem": true,
-      "_id": "69e0bc01906b68a44d6ed2ae"
+      "isSystem": true
     },
     {
       "id": "role-patient",
       "name": "patient",
       "description": "Patient account",
-      "isSystem": true,
-      "_id": "69e0bc01906b68a44d6ed2af"
+      "isSystem": true
     }
   ],
   "permissionEntries": [
     {
-      "id": "perm-1776335872950-1279",
+      "id": "perm-1776340112084-2064",
       "role": "admin",
       "resource": "doctor",
       "actions": [
@@ -178,11 +185,10 @@
         "read",
         "update",
         "delete"
-      ],
-      "_id": "69e0bc01906b68a44d6ed2b0"
+      ]
     },
     {
-      "id": "perm-1776335872950-5302",
+      "id": "perm-1776340112084-1566",
       "role": "admin",
       "resource": "patient",
       "actions": [
@@ -190,11 +196,10 @@
         "read",
         "update",
         "delete"
-      ],
-      "_id": "69e0bc01906b68a44d6ed2b1"
+      ]
     },
     {
-      "id": "perm-1776335872950-7527",
+      "id": "perm-1776340112084-8238",
       "role": "admin",
       "resource": "appointment",
       "actions": [
@@ -202,11 +207,10 @@
         "read",
         "update",
         "delete"
-      ],
-      "_id": "69e0bc01906b68a44d6ed2b2"
+      ]
     },
     {
-      "id": "perm-1776335872950-9317",
+      "id": "perm-1776340112084-1654",
       "role": "admin",
       "resource": "rbac",
       "actions": [
@@ -214,11 +218,10 @@
         "read",
         "update",
         "delete"
-      ],
-      "_id": "69e0bc01906b68a44d6ed2b3"
+      ]
     },
     {
-      "id": "perm-1776335872950-5907",
+      "id": "perm-1776340112084-1153",
       "role": "admin",
       "resource": "session",
       "actions": [
@@ -226,11 +229,10 @@
         "read",
         "update",
         "delete"
-      ],
-      "_id": "69e0bc01906b68a44d6ed2b4"
+      ]
     },
     {
-      "id": "perm-1776335872950-2243",
+      "id": "perm-1776340112084-2813",
       "role": "admin",
       "resource": "record",
       "actions": [
@@ -238,11 +240,10 @@
         "read",
         "update",
         "delete"
-      ],
-      "_id": "69e0bc01906b68a44d6ed2b5"
+      ]
     },
     {
-      "id": "perm-1776335872950-3504",
+      "id": "perm-1776340112084-387",
       "role": "admin",
       "resource": "department",
       "actions": [
@@ -250,43 +251,39 @@
         "read",
         "update",
         "delete"
-      ],
-      "_id": "69e0bc01906b68a44d6ed2b6"
+      ]
     },
     {
-      "id": "perm-1776335872950-3984",
+      "id": "perm-1776340112084-936",
       "role": "doctor",
       "resource": "doctor",
       "actions": [
         "read",
         "update"
-      ],
-      "_id": "69e0bc01906b68a44d6ed2b7"
+      ]
     },
     {
-      "id": "perm-1776335872950-1633",
+      "id": "perm-1776340112084-9899",
       "role": "doctor",
       "resource": "patient",
       "actions": [
         "create",
         "read",
         "update"
-      ],
-      "_id": "69e0bc01906b68a44d6ed2b8"
+      ]
     },
     {
-      "id": "perm-1776335872950-3635",
+      "id": "perm-1776340112084-6953",
       "role": "doctor",
       "resource": "appointment",
       "actions": [
         "create",
         "read",
         "update"
-      ],
-      "_id": "69e0bc01906b68a44d6ed2b9"
+      ]
     },
     {
-      "id": "perm-1776335872950-2478",
+      "id": "perm-1776340112084-3158",
       "role": "doctor",
       "resource": "session",
       "actions": [
@@ -294,50 +291,45 @@
         "read",
         "update",
         "delete"
-      ],
-      "_id": "69e0bc01906b68a44d6ed2ba"
+      ]
     },
     {
-      "id": "perm-1776335872950-6157",
+      "id": "perm-1776340112084-5667",
       "role": "doctor",
       "resource": "record",
       "actions": [
         "create",
         "read",
         "update"
-      ],
-      "_id": "69e0bc01906b68a44d6ed2bb"
+      ]
     },
     {
-      "id": "perm-1776335872950-7258",
+      "id": "perm-1776340112084-4550",
       "role": "doctor",
       "resource": "department",
       "actions": [
         "read"
-      ],
-      "_id": "69e0bc01906b68a44d6ed2bc"
+      ]
     },
     {
-      "id": "perm-1776335872950-6632",
+      "id": "perm-1776340112084-2228",
       "role": "patient",
       "resource": "doctor",
       "actions": [
         "read"
-      ],
-      "_id": "69e0bc01906b68a44d6ed2bd"
+      ]
     },
     {
-      "id": "perm-1776335872950-5334",
+      "id": "perm-1776340112084-7022",
       "role": "patient",
       "resource": "patient",
       "actions": [
         "read",
         "update"
-      ],
-      "_id": "69e0bc01906b68a44d6ed2be"
+      ]
     },
     {
-      "id": "perm-1776335872950-5728",
+      "id": "perm-1776340112084-4212",
       "role": "patient",
       "resource": "appointment",
       "actions": [
@@ -345,11 +337,10 @@
         "read",
         "update",
         "delete"
-      ],
-      "_id": "69e0bc01906b68a44d6ed2bf"
+      ]
     },
     {
-      "id": "perm-1776335872950-2499",
+      "id": "perm-1776340112084-132",
       "role": "patient",
       "resource": "session",
       "actions": [
@@ -357,26 +348,23 @@
         "read",
         "update",
         "delete"
-      ],
-      "_id": "69e0bc01906b68a44d6ed2c0"
+      ]
     },
     {
-      "id": "perm-1776335872950-238",
+      "id": "perm-1776340112084-5266",
       "role": "patient",
       "resource": "record",
       "actions": [
         "read"
-      ],
-      "_id": "69e0bc01906b68a44d6ed2c1"
+      ]
     },
     {
-      "id": "perm-1776335872950-9188",
+      "id": "perm-1776340112084-15",
       "role": "patient",
       "resource": "department",
       "actions": [
         "read"
-      ],
-      "_id": "69e0bc01906b68a44d6ed2c2"
+      ]
     }
   ]
 }

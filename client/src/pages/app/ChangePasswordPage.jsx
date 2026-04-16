@@ -1,6 +1,7 @@
 import { useState } from "react";
 import PageHeader from "../../components/common/PageHeader";
 import { useAuth } from "../../context/AuthContext";
+import PortalLoader from "../../components/common/PortalLoader";
 
 function ChangePasswordPage() {
   const { changePassword } = useAuth();
@@ -8,10 +9,11 @@ function ChangePasswordPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const [showLoading, setShowLoading] = useState(false);
   const onSubmit = async (event) => {
     event.preventDefault();
     setMessage("");
+    setShowLoading(true);
     setError("");
     setIsSubmitting(true);
     try {
@@ -21,6 +23,7 @@ function ChangePasswordPage() {
     } catch (submitError) {
       setError(submitError.message);
     } finally {
+      setShowLoading(false);
       setIsSubmitting(false);
     }
   };
@@ -28,6 +31,12 @@ function ChangePasswordPage() {
   return (
     <section className="space-y-4">
       <PageHeader title="Change Password" subtitle="Update your account credentials securely." />
+
+      {showLoading ? (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-md">
+          <PortalLoader title="Changing Password" subtitle="Changing your password..." />
+        </div>
+      ) : null}
 
       <div className="max-w-2xl rounded-[12px] border border-slate-200 bg-white p-4 shadow-soft">
         <form className="space-y-3" onSubmit={onSubmit}>

@@ -16,6 +16,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationContext";
 import { apiFetch } from "../../utils/api";
 import { canPerform } from "../../utils/permissions";
+import PortalLoader from "../../components/common/PortalLoader";
 
 function DepartmentsPage() {
   const { user } = useAuth();
@@ -25,7 +26,7 @@ function DepartmentsPage() {
   const [doctors, setDoctors] = useState([]);
   const [patients, setPatients] = useState([]);
   const [error, setError] = useState("");
-
+  const [showLoading, setShowLoading] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -38,6 +39,7 @@ function DepartmentsPage() {
   const canDelete = canPerform(user?.role, "department", "delete");
 
   const loadData = async () => {
+    setShowLoading(true);
     try {
       setError("");
       const [departmentRes, doctorRes, patientRes] = await Promise.all([
@@ -51,6 +53,8 @@ function DepartmentsPage() {
     } catch (fetchError) {
       setError(fetchError.message);
       notifyError(fetchError.message, "Departments load failed");
+    } finally {
+      setShowLoading(false);
     }
   };
 
@@ -90,6 +94,7 @@ function DepartmentsPage() {
 
   const submitCreate = async (event) => {
     event.preventDefault();
+    setShowLoading(true);
     try {
       setError("");
       await apiFetch("/departments", {
@@ -103,12 +108,15 @@ function DepartmentsPage() {
     } catch (submitError) {
       setError(submitError.message);
       notifyError(submitError.message, "Department create failed");
+    } finally {
+      setShowLoading(false);
     }
   };
 
   const submitEdit = async (event) => {
     event.preventDefault();
     if (!editTarget) return;
+    setShowLoading(true);
     try {
       setError("");
       await apiFetch(`/departments/${editTarget.id}`, {
@@ -122,11 +130,14 @@ function DepartmentsPage() {
     } catch (submitError) {
       setError(submitError.message);
       notifyError(submitError.message, "Department update failed");
+    } finally {
+      setShowLoading(false);
     }
   };
 
   const removeDepartment = async () => {
     if (!deleteTarget) return;
+    setShowLoading(true);
     try {
       setError("");
       await apiFetch(`/departments/${deleteTarget.id}`, { method: "DELETE" });
@@ -136,6 +147,8 @@ function DepartmentsPage() {
     } catch (submitError) {
       setError(submitError.message);
       notifyError(submitError.message, "Department delete failed");
+    } finally {
+      setShowLoading(false);
     }
   };
 
@@ -145,6 +158,12 @@ function DepartmentsPage() {
         title="Departments"
         subtitle="Department-wise distribution and department master management."
       />
+
+      {showLoading ? (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-md">
+          <PortalLoader title="Loading Departments" subtitle="Loading departments data..." />
+        </div>
+      ) : null}
 
       {error ? <p className="rounded-[12px] border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">{error}</p> : null}
 

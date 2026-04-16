@@ -13,6 +13,8 @@ import {
 import PageHeader from "../../components/common/PageHeader";
 import { useAuth } from "../../context/AuthContext";
 import { apiFetch } from "../../utils/api";
+import PortalLoader from "../../components/common/PortalLoader";
+
 
 function SaaSStatCard({ title, value, note, icon: Icon, border }) {
   return (
@@ -33,6 +35,7 @@ function SaaSStatCard({ title, value, note, icon: Icon, border }) {
 
 function DashboardPage() {
   const { user } = useAuth();
+const [showLoading, setShowLoading] = useState(false);
   const [payload, setPayload] = useState({
     stats: { totalPatients: 0, highRisk: 0, visitsToday: 0, newPatients: 0 },
     triageQueue: [],
@@ -43,12 +46,15 @@ function DashboardPage() {
   const [error, setError] = useState("");
 
   const loadOverview = async () => {
+    setShowLoading(true);
     try {
       setError("");
       const data = await apiFetch("/dashboard/overview");
       setPayload(data);
     } catch (fetchError) {
       setError(fetchError.message);
+    } finally {
+      setShowLoading(false);
     }
   };
 
@@ -99,6 +105,12 @@ function DashboardPage() {
         title={`${roleLabel.charAt(0).toUpperCase()}${roleLabel.slice(1)} Dashboard`}
         subtitle="Modern command center for role-based healthcare operations."
       />
+
+{showLoading ? (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-md">
+          <PortalLoader title="Loading Dashboard" subtitle="Loading dashboard data..." />
+        </div>
+      ) : null}
 
       {error ? <p className="rounded-[12px] border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">{error}</p> : null}
 
